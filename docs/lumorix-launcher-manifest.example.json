@@ -1,0 +1,20 @@
+{
+  "gameId": "lumorix-null-district",
+  "displayName": "Lumorix: Null District",
+  "version": "0.1.0-beta.1",
+  "releaseChannel": "beta",
+  "platforms": {
+    "windows-x64": {
+      "installerKind": "tauri-nsis",
+      "installerArtifactPattern": "Lumorix Null District_*_x64-setup.exe",
+      "executablePath": "Lumorix Null District/Lumorix Null District.exe",
+      "installCommand": "{installer} /S",
+      "launchCommand": "{installDir}/Lumorix Null District.exe"
+    }
+  },
+  "updates": {
+    "provider": "github-releases",
+    "repo": "lumorix/nulldistrict",
+    "latestJsonUrl": "https://github.com/lumorix/nulldistrict/releases/latest/download/latest.json"
+  }
+}

@@ -1,0 +1,50 @@
+# Game Design
+
+## Product
+
+`Lumorix: Null District` is a standalone dark 2D online mystery RPG for PC. The Lumorix Launcher can later install, update and launch it, but this app owns its own game runtime, versioning and releases.
+
+## Fantasy
+
+Players enter Null District, a sealed and corrupted zone filled with broken facilities, strange signals, hidden terminals, creatures and consequence flags. The first chapter is `The First Signal`.
+
+## Beta 0.1 Areas
+
+- Hub: `Signal Haven`
+- Area 1: `District Entrance`
+- Area 2: `Underground Sector A`
+- Optional PvP: `PvP Breach Zone`
+
+## Core Verbs
+
+- Explore side-view maps.
+- Fight enemies with melee and ability attacks.
+- Restore corrupted systems.
+- Read terminals and collect lore.
+- Cooperate in 4-8 player instances.
+- Chat in instance.
+- Enter PvP only in marked breach zones.
+
+## Quest Starter Set
+
+1. Enter the Null District.
+2. Restore the First Relay.
+3. Collect 3 Signal Fragments.
+4. Defeat the Corrupted Scout.
+5. Read the Broken Terminal.
+
+## Progression
+
+Players gain XP, levels and skill points through gameplay only. Starter passive skills:
+
+- Longer dash.
+- Faster stamina recovery.
+- Small health increase.
+- Stronger basic attack through gameplay.
+- Lore detection radius.
+
+Paid products must never grant gameplay power.
+
+## Story Beat
+
+The player wakes at Signal Haven after receiving a corrupted Lumorix signal. A terminal warns: `The district remembers you.` Restoring the First Relay opens Underground Sector A and sets a story consequence flag.

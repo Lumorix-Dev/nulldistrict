@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountRole {
+  PLAYER
+  MODERATOR
+  ADMIN
+  DEVELOPER
+}
+
+enum ItemType {
+  material
+  lore
+  cosmetic
+  consumable
+  quest
+}
+
+enum CurrencyType {
+  SOFT
+  PREMIUM
+}
+
+enum ShopProductType {
+  PREMIUM_CURRENCY
+  COSMETIC
+  BATTLE_PASS
+  FOUNDER_PACK
+}
+
+enum CosmeticSlot {
+  skin
+  title
+  banner
+  emote
+  pet
+}
+
+model User {
+  id              String             @id @default(cuid())
+  username        String             @unique
+  email           String             @unique
+  passwordHash    String
+  role            AccountRole        @default(PLAYER)
+  premiumCurrency Int                @default(0)
+  softCurrency    Int                @default(100)
+  isBanned        Boolean            @default(false)
+  banReason       String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  sessions        SessionToken[]
+  characters      Character[]
+  inventories     InventoryItem[]
+  currencies      CurrencyBalance[]
+  purchases       Purchase[]
+  questProgress   QuestProgress[]
+  loreFragments   LoreFragment[]
+  unlockedAreas   UnlockedArea[]
+  stats           PlayerStats?
+  sanctions       Sanction[]
+  auditLogs        AuditLog[]         @relation("AuditActor")
+  ownedCosmetics  OwnedCosmetic[]
+}
+
+model SessionToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Character {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  className  String
+  areaId     String   @default("signal-haven")
+  level      Int      @default(1)
+  xp         Int      @default(0)
+  skillPoints Int     @default(0)
+  storyFlags Json     @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+}
+
+model InventoryItem {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+  itemType  ItemType
+  quantity  Int      @default(1)
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+}
+
+model ItemCatalog {
+  id          String   @id
+  name        String
+  description String
+  itemType    ItemType
+  rarity      String
+  iconKey     String
+  stackLimit  Int
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Cosmetic {
+  id          String        @id
+  name        String
+  slot        CosmeticSlot
+  rarity      String
+  description String
+  enabled     Boolean       @default(true)
+  owners      OwnedCosmetic[]
+}
+
+model OwnedCosmetic {
+  id         String   @id @default(cuid())
+  userId     String
+  cosmeticId String
+  equipped   Boolean  @default(false)
+  grantedAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cosmetic   Cosmetic @relation(fields: [cosmeticId], references: [id])
+
+  @@unique([userId, cosmeticId])
+}
+
+model CurrencyBalance {
+  id        String       @id @default(cuid())
+  userId    String
+  type      CurrencyType
+  amount    Int          @default(0)
+  updatedAt DateTime     @updatedAt
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+}
+
+model Purchase {
+  id                String          @id @default(cuid())
+  userId            String
+  productId         String
+  provider          String          @default("test")
+  providerSessionId String?
+  status            String          @default("pending")
+  amountCents       Int             @default(0)
+  premiumGranted    Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product           ShopProduct     @relation(fields: [productId], references: [id])
+}
+
+model ShopProduct {
+  id             String          @id
+  slug           String          @unique
+  title          String
+  description    String
+  productType    ShopProductType
+  priceCents     Int
+  premiumPrice   Int?
+  grantsPremium  Int?
+  cosmeticId     String?
+  enabled        Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  purchases      Purchase[]
+}
+
+model BattlePass {
+  id          String               @id
+  title       String
+  season      String
+  startsAt    DateTime?
+  endsAt      DateTime?
+  active      Boolean              @default(false)
+  cosmeticsOnly Boolean            @default(true)
+  progress    BattlePassProgress[]
+}
+
+model BattlePassProgress {
+  id           String     @id @default(cuid())
+  userId       String
+  battlePassId String
+  xp           Int        @default(0)
+  premium      Boolean    @default(false)
+  claimed      Json       @default("[]")
+  updatedAt    DateTime   @updatedAt
+  battlePass   BattlePass @relation(fields: [battlePassId], references: [id])
+
+  @@unique([userId, battlePassId])
+}
+
+model Quest {
+  id                 String          @id
+  title              String
+  chapter            String
+  description        String
+  objective          String
+  target             Int
+  rewardXp           Int
+  rewardSoftCurrency Int
+  enabled            Boolean         @default(true)
+  progress           QuestProgress[]
+}
+
+model QuestProgress {
+  id        String    @id @default(cuid())
+  userId    String
+  questId   String
+  current   Int       @default(0)
+  completed Boolean   @default(false)
+  claimedAt DateTime?
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest     Quest     @relation(fields: [questId], references: [id])
+
+  @@unique([userId, questId])
+}
+
+model LoreFragment {
+  id        String   @id @default(cuid())
+  userId    String
+  fragmentId String
+  title     String
+  body      String
+  collectedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fragmentId])
+}
+
+model UnlockedArea {
+  id        String   @id @default(cuid())
+  userId    String
+  areaId    String
+  unlockedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, areaId])
+}
+
+model PlayerStats {
+  id             String   @id @default(cuid())
+  userId          String   @unique
+  totalXp         Int      @default(0)
+  deaths          Int      @default(0)
+  enemiesDefeated Int      @default(0)
+  pvpDefeats      Int      @default(0)
+  firstDeathAt    DateTime?
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Sanction {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  reason    String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  targetId  String?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  actor     User?    @relation("AuditActor", fields: [actorId], references: [id])
+}

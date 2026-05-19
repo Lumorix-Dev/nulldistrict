@@ -1,0 +1,51 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  windows-desktop:
+    runs-on: windows-latest
+    env:
+      DATABASE_URL: postgresql://nulldistrict:nulldistrict@localhost:5432/nulldistrict?schema=public
+      JWT_SECRET: release-build-placeholder-secret-change-in-runtime
+      SERVER_PORT: 4000
+      CLIENT_ORIGIN: http://localhost:1420
+      VITE_SERVER_URL: http://217.160.79.250
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - run: npm ci
+      - run: npm run db:generate
+      - run: npm run build:shared
+      - run: npm run build:server
+      - run: npm run test
+
+      - name: Build and publish Windows bundles
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: apps/desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: "Lumorix: Null District ${{ github.ref_name }}"
+          releaseBody: "See CHANGELOG.md for release notes. Windows installer artifacts are attached below."
+          releaseDraft: false
+          prerelease: ${{ contains(github.ref_name, 'beta') }}
+          args: --target x86_64-pc-windows-msvc

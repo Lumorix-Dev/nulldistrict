@@ -1,0 +1,41 @@
+{
+  "name": "lumorix-null-district",
+  "version": "0.1.0-beta.1",
+  "private": true,
+  "type": "module",
+  "description": "Lumorix: Null District playable beta monorepo.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run build:shared && concurrently -n server,desktop -c cyan,magenta \"npm run dev -w @nulldistrict/server\" \"npm run dev -w @nulldistrict/desktop\"",
+    "build": "npm run build:shared && npm run build:server && npm run build:desktop",
+    "build:shared": "npm run build -w @nulldistrict/shared && npm run build -w @nulldistrict/game-data",
+    "build:server": "npm run build -w @nulldistrict/server",
+    "build:desktop": "npm run build -w @nulldistrict/desktop",
+    "typecheck": "npm run build:shared && npm run typecheck -w @nulldistrict/server && npm run typecheck -w @nulldistrict/desktop && npm run typecheck -w @nulldistrict/admin",
+    "lint": "eslint .",
+    "test": "npm run test --workspaces --if-present",
+    "db:generate": "npm run db:generate -w @nulldistrict/server",
+    "db:migrate": "npm run db:migrate -w @nulldistrict/server",
+    "db:seed": "npm run db:seed -w @nulldistrict/server",
+    "version:patch": "node scripts/bump-version.mjs patch",
+    "version:minor": "node scripts/bump-version.mjs minor",
+    "release:beta": "node scripts/bump-version.mjs beta"
+  },
+  "engines": {
+    "node": ">=20.11.0",
+    "npm": ">=10.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.39.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.47.0",
+    "vite": "^8.0.13",
+    "vitest": "^4.0.9"
+  }
+}

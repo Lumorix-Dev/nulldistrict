@@ -1,0 +1,36 @@
+{
+  "name": "@nulldistrict/desktop",
+  "version": "0.1.0-beta.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 1420",
+    "dev:web": "vite --host 127.0.0.1 --port 1420",
+    "tauri": "tauri",
+    "build": "npm run build:web",
+    "build:web": "tsc -p tsconfig.json && vite build",
+    "build:tauri": "tauri build",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@nulldistrict/game-data": "0.1.0-beta.1",
+    "@nulldistrict/shared": "0.1.0-beta.1",
+    "@tauri-apps/api": "^2.9.0",
+    "@tauri-apps/plugin-updater": "^2.9.0",
+    "lucide-react": "^0.554.0",
+    "phaser": "^3.90.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "socket.io-client": "^4.8.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.0",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.4",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.13"
+  }
+}
