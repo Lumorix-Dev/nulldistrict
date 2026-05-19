@@ -67,6 +67,14 @@ VITE_SERVER_URL=http://217.160.79.250
 
 That means GitHub-built Windows installers connect to the current Strato beta backend by default. Replace this with the future HTTPS domain later, for example `https://api.lumorix.de`.
 
+The same release workflow also uploads Lumorix Launcher assets:
+
+- `lumorix-null-district-win64.zip`
+- `lumorix-null-district.manifest.json`
+- `lumorix-null-district-win64.sha256.txt`
+
+The Launcher installs the ZIP package, verifies its SHA-256 hash, then launches `lumorix-null-district.exe` from the selected Lumorix library folder.
+
 ## What The Workflow Does
 
 - Installs dependencies.

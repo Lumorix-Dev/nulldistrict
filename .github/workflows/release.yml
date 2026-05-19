@@ -49,3 +49,93 @@ jobs:
           releaseDraft: false
           prerelease: ${{ contains(github.ref_name, 'beta') }}
           args: --target x86_64-pc-windows-msvc
+
+      - name: Prepare Lumorix Launcher package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $releaseRoot = Join-Path $PWD "distribution/launcher"
+          $stage = Join-Path $releaseRoot "stage"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Get-ChildItem -Path $releaseRoot -File -ErrorAction SilentlyContinue | Remove-Item -Force
+          Get-ChildItem -Path $stage -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
+
+          $exe = Get-ChildItem -Path "apps/desktop/src-tauri/target" -Recurse -Filter "lumorix-null-district.exe" |
+            Where-Object { $_.FullName -match "\\release\\" } |
+            Sort-Object Length -Descending |
+            Select-Object -First 1
+          if (-not $exe) {
+            throw "Could not find lumorix-null-district.exe in Tauri target output."
+          }
+
+          Copy-Item -Path $exe.FullName -Destination (Join-Path $stage "lumorix-null-district.exe") -Force
+
+          $zipPath = Join-Path $releaseRoot "lumorix-null-district-win64.zip"
+          Compress-Archive -Path (Join-Path $stage "*") -DestinationPath $zipPath -Force
+
+          $zip = Get-Item $zipPath
+          $sha256 = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          $exeSize = (Get-Item (Join-Path $stage "lumorix-null-district.exe")).Length
+          $downloadUrl = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/lumorix-null-district-win64.zip"
+
+          $manifest = [ordered]@{
+            id = "com.lumorix.nulldistrict"
+            itemType = "game"
+            platform = "desktop"
+            name = "Lumorix: Null District"
+            version = $version
+            description = "A dark 2D side-view online mystery RPG beta set inside a sealed corrupted district with co-op exploration, action combat, quests, inventory and fair cosmetics-only monetization."
+            developer = "Lumorix"
+            releaseDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd")
+            categories = @("Mystery", "RPG", "Online", "Action")
+            tags = @(
+              [ordered]@{ id = "mystery"; weight = 3 },
+              [ordered]@{ id = "online"; weight = 3 },
+              [ordered]@{ id = "rpg"; weight = 3 },
+              [ordered]@{ id = "pixel_art"; weight = 2 },
+              [ordered]@{ id = "co_op"; weight = 2 },
+              [ordered]@{ id = "dark_sci_fi"; weight = 2 }
+            )
+            coverImage = "/assets/games/lumorix-null-district-cover.svg"
+            bannerImage = "/assets/games/lumorix-null-district-banner.svg"
+            iconImage = "/assets/games/lumorix-null-district-icon.svg"
+            executable = "lumorix-null-district.exe"
+            installSizeBytes = $exeSize
+            defaultInstallFolder = "Lumorix Null District"
+            distribution = [ordered]@{ channel = "githubRelease"; packageType = "zip" }
+            supportedActions = @("install", "launch", "update", "repair", "uninstall", "openFolder", "moveInstall")
+            installStrategy = [ordered]@{ kind = "zipArchive"; rootFolder = "." }
+            download = [ordered]@{
+              kind = "httpArchive"
+              url = $downloadUrl
+              sha256 = $sha256
+              sizeBytes = $zip.Length
+            }
+            changelog = @(
+              [ordered]@{
+                version = $version
+                date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd")
+                items = @(
+                  "Launcher-ready beta package for the standalone Null District desktop client.",
+                  "Connects to the live Strato backend for accounts, characters, multiplayer, quests, inventory and shop catalog.",
+                  "Includes Signal Haven, District Entrance, Underground Sector A and PvP Breach Zone vertical-slice content."
+                )
+              }
+            )
+          }
+
+          $manifestPath = Join-Path $releaseRoot "lumorix-null-district.manifest.json"
+          $manifest | ConvertTo-Json -Depth 12 | Set-Content -Path $manifestPath -Encoding UTF8
+          Set-Content -Path (Join-Path $releaseRoot "lumorix-null-district-win64.sha256.txt") -Value "$sha256  lumorix-null-district-win64.zip" -Encoding ascii
+
+      - name: Upload Lumorix Launcher package
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            distribution/launcher/lumorix-null-district-win64.zip
+            distribution/launcher/lumorix-null-district.manifest.json
+            distribution/launcher/lumorix-null-district-win64.sha256.txt
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'beta') }}
