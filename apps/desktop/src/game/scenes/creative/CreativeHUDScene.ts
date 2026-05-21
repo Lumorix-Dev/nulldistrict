@@ -2,13 +2,14 @@ import Phaser from 'phaser';
 import {
   blocksByCategory,
   ALL_CATEGORIES,
+  getBlock,
   type BlockCategory,
   type BlockDef,
 } from '../../systems/BlockRegistry';
 import { gameBus } from '../../EventBus';
 import type { CreativeScene } from './CreativeScene';
 
-// ─────────────────────── layout constants ────────────────────────────────────
+// ─────────────────────── layout constants ─────────────────────────────────────
 
 const PANEL_W        = 200;        // palette panel width
 const PANEL_BG       = 0x05070b;
@@ -36,10 +37,9 @@ const C_BORDER      = 0x9be7ff;
 const C_SELECTION   = 0x9be7ff;
 const C_TOOL_ACTIVE = 0x1a4f6a;
 const C_LAYER_0     = 0x1a2e3a;
-const C_LAYER_1     = 0x1a3a4a;
 const C_LAYER_2     = 0x1a4a5a;
 
-// ─────────────────────── toast record ────────────────────────────────────────
+// ─────────────────────── toast record ─────────────────────────────────────────
 
 interface Toast {
   bg:    Phaser.GameObjects.Rectangle;
@@ -48,58 +48,65 @@ interface Toast {
   timer: Phaser.Time.TimerEvent | null;
 }
 
-// ─────────────────────── scene ───────────────────────────────────────────────
+// ─────────────────────── scene ────────────────────────────────────────────────
 
 export class CreativeHUDScene extends Phaser.Scene {
 
-  // ── state mirrors ─────────────────────────────────────────────────────────
+  // ── state mirrors ──────────────────────────────────────────────────────────
   private activeCat:       BlockCategory = 'nature';
   private selectedBlockId  = 'grass';
   private activeLayer:     0 | 1 | 2     = 1;
   private currentTool      = 'place';
   private playerCount      = 1;
 
-  // ── palette objects ───────────────────────────────────────────────────────
+  // ── palette objects ────────────────────────────────────────────────────────
   private panelBg!:        Phaser.GameObjects.Rectangle;
   private catTabBgs:       Phaser.GameObjects.Rectangle[] = [];
   private catTabLabels:    Phaser.GameObjects.Text[]      = [];
-  private blockRows:       Array<{ bg: Phaser.GameObjects.Rectangle; icon: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.Text }> = [];
+  private blockRows:       Array<{
+    bg:    Phaser.GameObjects.Rectangle;
+    icon:  Phaser.GameObjects.Rectangle;
+    label: Phaser.GameObjects.Text;
+  }> = [];
   private layerBtns:       Array<{ bg: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.Text }> = [];
   private toolBtns:        Array<{ bg: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.Text }> = [];
   private paletteHeaderLbl!: Phaser.GameObjects.Text;
   private layerHeaderLbl!:   Phaser.GameObjects.Text;
   private toolHeaderLbl!:    Phaser.GameObjects.Text;
 
-  // ── minimap ───────────────────────────────────────────────────────────────
-  private minimapBg!:      Phaser.GameObjects.Rectangle;
-  private minimapGfx!:     Phaser.GameObjects.Graphics;
-  private minimapDirty     = true;
-  private minimapFrames    = 0;
+  // ── minimap ────────────────────────────────────────────────────────────────
+  private minimapBg!:  Phaser.GameObjects.Rectangle;
+  private minimapGfx!: Phaser.GameObjects.Graphics;
+  private minimapDirty  = true;
+  private minimapFrames = 0;
 
-  // ── world info ────────────────────────────────────────────────────────────
-  private infoBg!:     Phaser.GameObjects.Rectangle;
-  private infoGfx!:   Phaser.GameObjects.Text;
+  // ── world info ─────────────────────────────────────────────────────────────
+  private infoBg!:  Phaser.GameObjects.Rectangle;
+  private infoGfx!: Phaser.GameObjects.Text;
 
-  // ── toasts ────────────────────────────────────────────────────────────────
+  // ── toasts ─────────────────────────────────────────────────────────────────
   private toasts: Toast[] = [];
 
-  // ── bus cleanup ───────────────────────────────────────────────────────────
+  // ── bus cleanup ────────────────────────────────────────────────────────────
   private busUnsubs: Array<() => void> = [];
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── minimap block-color cache ──────────────────────────────────────────────
+  private readonly blockColorCache = new Map<string, number>();
+
+  // ───────────────────────────────────────────────────────────────────────────
 
   public constructor() {
     super('CreativeHUDScene');
   }
 
-  // ── lifecycle ─────────────────────────────────────────────────────────────
+  // ── lifecycle ──────────────────────────────────────────────────────────────
 
   public override create(): void {
     this.buildPalettePanel();
     this.buildMinimap();
     this.buildInfoPanel();
     this.setupBusListeners();
-    // Sync initial state back to game
+    // Sync initial state to game scene
     gameBus.emit('voidcraft:selected-block-change', { blockId: this.selectedBlockId });
     gameBus.emit('voidcraft:layer-change',   { layer: this.activeLayer });
     gameBus.emit('voidcraft:tool-change',    { tool: this.currentTool });
@@ -116,31 +123,28 @@ export class CreativeHUDScene extends Phaser.Scene {
     this.updateInfoText();
   }
 
-  // ── palette panel ─────────────────────────────────────────────────────────
+  // ── palette panel ──────────────────────────────────────────────────────────
 
   private buildPalettePanel(): void {
     const H = this.scale.height;
 
-    // Opaque background
-    this.panelBg = this.add.rectangle(0, 0, PANEL_W, H, PANEL_BG, PANEL_ALPHA);
-    this.panelBg.setOrigin(0, 0);
-    this.panelBg.setDepth(200);
-    this.panelBg.setScrollFactor(0);
+    this.panelBg = this.add.rectangle(0, 0, PANEL_W, H, PANEL_BG, PANEL_ALPHA)
+      .setOrigin(0, 0).setDepth(200).setScrollFactor(0);
 
-    // «PALETTE» header
-    this.paletteHeaderLbl = this.add.text(PANEL_W / 2, 10, 'PALETTE', {
-      fontFamily: 'monospace', fontSize: '11px', color: C_TEXT_DIM,
+    this.paletteHeaderLbl = this.add.text(PANEL_W / 2, 8, 'PALETTE', {
+      fontFamily: 'monospace', fontSize: '10px', color: C_TEXT_DIM,
     }).setOrigin(0.5, 0).setDepth(201).setScrollFactor(0);
 
-    // Category tabs
+    // Category tabs — one letter per tab
     const tabW = PANEL_W / ALL_CATEGORIES.length;
     for (let i = 0; i < ALL_CATEGORIES.length; i++) {
-      const cat   = ALL_CATEGORIES[i]!;
-      const tabX  = i * tabW;
-      const tabY  = 26;
+      const cat  = ALL_CATEGORIES[i]!;
+      const tabX = i * tabW;
+      const tabY = 24;
 
       const bg = this.add.rectangle(tabX, tabY, tabW, TAB_H, C_LAYER_0, 1)
         .setOrigin(0, 0).setDepth(201).setScrollFactor(0);
+
       const lbl = this.add.text(tabX + tabW / 2, tabY + TAB_H / 2,
         cat.charAt(0).toUpperCase(), {
           fontFamily: 'monospace', fontSize: '10px',
@@ -148,8 +152,9 @@ export class CreativeHUDScene extends Phaser.Scene {
         }).setOrigin(0.5, 0.5).setDepth(202).setScrollFactor(0);
 
       bg.setInteractive();
-      bg.on('pointerdown', () => this.selectCategory(cat));
-      bg.on('pointerover', () => { if (cat !== this.activeCat) bg.setFillStyle(0x1a2a3a); });
+      const capturedCat: BlockCategory = cat;
+      bg.on('pointerdown', () => this.selectCategory(capturedCat));
+      bg.on('pointerover', () => { if (capturedCat !== this.activeCat) bg.setFillStyle(0x1a2a3a); });
       bg.on('pointerout',  () => this.refreshTabVisuals());
 
       this.catTabBgs.push(bg);
@@ -170,17 +175,17 @@ export class CreativeHUDScene extends Phaser.Scene {
 
   private refreshTabVisuals(): void {
     for (let i = 0; i < ALL_CATEGORIES.length; i++) {
-      const cat = ALL_CATEGORIES[i]!;
+      const cat = ALL_CATEGORIES[i];
       const bg  = this.catTabBgs[i];
       const lbl = this.catTabLabels[i];
-      if (!bg || !lbl) continue;
+      if (!cat || !bg || !lbl) continue;
       const active = cat === this.activeCat;
       bg.setFillStyle(active ? C_ACTIVE_TAB : C_LAYER_0, 1);
       lbl.setColor(active ? C_TEXT_BRIGHT : C_TEXT_DIM);
     }
   }
 
-  /** Destroy current block rows and rebuild for activeCat. */
+  /** Destroy existing block rows and rebuild for the current category. */
   private buildBlockList(): void {
     for (const row of this.blockRows) {
       row.bg.destroy();
@@ -190,17 +195,16 @@ export class CreativeHUDScene extends Phaser.Scene {
     this.blockRows = [];
 
     const blocks = blocksByCategory.get(this.activeCat) ?? [];
-    const listY  = 26 + TAB_H + 6;
+    const listY  = 24 + TAB_H + 6;
 
     for (let i = 0; i < blocks.length; i++) {
-      const block  = blocks[i]!;
-      const rowY   = listY + i * BLOCK_H;
+      const block      = blocks[i]!;
+      const rowY       = listY + i * BLOCK_H;
       const isSelected = block.id === this.selectedBlockId;
 
       const bg = this.add.rectangle(0, rowY, PANEL_W, BLOCK_H,
         isSelected ? 0x1a3550 : 0x08101a, 1)
         .setOrigin(0, 0).setDepth(201).setScrollFactor(0);
-
       if (isSelected) bg.setStrokeStyle(1, C_SELECTION, 1);
 
       const icon = this.add.rectangle(
@@ -219,7 +223,6 @@ export class CreativeHUDScene extends Phaser.Scene {
       ).setOrigin(0, 0.5).setDepth(202).setScrollFactor(0);
 
       bg.setInteractive();
-      // Capture block for the closure
       const capturedBlock: BlockDef = block;
       bg.on('pointerdown', () => this.emitSelectBlock(capturedBlock.id));
       bg.on('pointerover', () => { if (capturedBlock.id !== this.selectedBlockId) bg.setFillStyle(0x102030); });
@@ -235,37 +238,34 @@ export class CreativeHUDScene extends Phaser.Scene {
     this.buildBlockList();
   }
 
-  // ── layer buttons ─────────────────────────────────────────────────────────
+  // ── layer buttons ──────────────────────────────────────────────────────────
 
   private buildLayerButtons(): void {
     const labels: string[]   = ['BG', 'TR', 'FG'];
     const layers: (0|1|2)[]  = [0, 1, 2];
-    const btmReserve         = LAYER_BTN_H + TOOL_BTN_H + 28;
     const H                  = this.scale.height;
+    const btmReserve         = LAYER_BTN_H + TOOL_BTN_H + 30;
     const startY             = H - btmReserve;
+    const btnW               = Math.floor(PANEL_W / 3);
 
     this.layerHeaderLbl = this.add.text(PANEL_W / 2, startY - 14, 'LAYER', {
       fontFamily: 'monospace', fontSize: '10px', color: C_TEXT_DIM,
     }).setOrigin(0.5, 0).setDepth(201).setScrollFactor(0);
 
-    const btnW = Math.floor(PANEL_W / 3);
     for (let i = 0; i < 3; i++) {
       const layer = layers[i]!;
       const x     = i * btnW;
       const bg    = this.add.rectangle(x, startY, btnW, LAYER_BTN_H,
         layer === this.activeLayer ? C_LAYER_2 : C_LAYER_0, 1)
         .setOrigin(0, 0).setDepth(201).setScrollFactor(0);
-      const lbl   = this.add.text(x + btnW / 2, startY + LAYER_BTN_H / 2,
-        labels[i]!, {
-          fontFamily: 'monospace', fontSize: '11px',
-          color: layer === this.activeLayer ? C_TEXT_BRIGHT : C_TEXT_DIM,
-        }).setOrigin(0.5, 0.5).setDepth(202).setScrollFactor(0);
+      const lbl   = this.add.text(x + btnW / 2, startY + LAYER_BTN_H / 2, labels[i]!, {
+        fontFamily: 'monospace', fontSize: '11px',
+        color: layer === this.activeLayer ? C_TEXT_BRIGHT : C_TEXT_DIM,
+      }).setOrigin(0.5, 0.5).setDepth(202).setScrollFactor(0);
 
       bg.setInteractive();
       const capturedLayer: 0|1|2 = layer;
-      bg.on('pointerdown', () => {
-        gameBus.emit('voidcraft:select-layer', { layer: capturedLayer });
-      });
+      bg.on('pointerdown', () => gameBus.emit('voidcraft:select-layer', { layer: capturedLayer }));
 
       this.layerBtns.push({ bg, label: lbl });
     }
@@ -274,7 +274,7 @@ export class CreativeHUDScene extends Phaser.Scene {
   private refreshLayerButtons(): void {
     const layers: (0|1|2)[] = [0, 1, 2];
     for (let i = 0; i < this.layerBtns.length; i++) {
-      const btn  = this.layerBtns[i];
+      const btn = this.layerBtns[i];
       if (!btn) continue;
       const active = layers[i] === this.activeLayer;
       btn.bg.setFillStyle(active ? C_LAYER_2 : C_LAYER_0);
@@ -282,36 +282,33 @@ export class CreativeHUDScene extends Phaser.Scene {
     }
   }
 
-  // ── tool buttons ──────────────────────────────────────────────────────────
+  // ── tool buttons ───────────────────────────────────────────────────────────
 
   private buildToolButtons(): void {
     const toolIds:    string[] = ['place', 'erase', 'fill', 'eyedropper'];
     const toolLabels: string[] = ['Plc', 'Era', 'Fil', 'Eye'];
     const H                    = this.scale.height;
     const startY               = H - TOOL_BTN_H - 6;
+    const btnW                 = Math.floor(PANEL_W / 4);
 
     this.toolHeaderLbl = this.add.text(PANEL_W / 2, startY - 14, 'TOOL', {
       fontFamily: 'monospace', fontSize: '10px', color: C_TEXT_DIM,
     }).setOrigin(0.5, 0).setDepth(201).setScrollFactor(0);
 
-    const btnW = Math.floor(PANEL_W / 4);
     for (let i = 0; i < 4; i++) {
       const tool = toolIds[i]!;
       const x    = i * btnW;
       const bg   = this.add.rectangle(x, startY, btnW, TOOL_BTN_H,
         tool === this.currentTool ? C_TOOL_ACTIVE : C_LAYER_0, 1)
         .setOrigin(0, 0).setDepth(201).setScrollFactor(0);
-      const lbl  = this.add.text(x + btnW / 2, startY + TOOL_BTN_H / 2,
-        toolLabels[i]!, {
-          fontFamily: 'monospace', fontSize: '10px',
-          color: tool === this.currentTool ? C_TEXT_BRIGHT : C_TEXT_DIM,
-        }).setOrigin(0.5, 0.5).setDepth(202).setScrollFactor(0);
+      const lbl  = this.add.text(x + btnW / 2, startY + TOOL_BTN_H / 2, toolLabels[i]!, {
+        fontFamily: 'monospace', fontSize: '10px',
+        color: tool === this.currentTool ? C_TEXT_BRIGHT : C_TEXT_DIM,
+      }).setOrigin(0.5, 0.5).setDepth(202).setScrollFactor(0);
 
       bg.setInteractive();
       const capturedTool = tool;
-      bg.on('pointerdown', () => {
-        gameBus.emit('voidcraft:select-tool', { tool: capturedTool });
-      });
+      bg.on('pointerdown', () => gameBus.emit('voidcraft:select-tool', { tool: capturedTool }));
 
       this.toolBtns.push({ bg, label: lbl });
     }
@@ -320,7 +317,7 @@ export class CreativeHUDScene extends Phaser.Scene {
   private refreshToolButtons(): void {
     const toolIds: string[] = ['place', 'erase', 'fill', 'eyedropper'];
     for (let i = 0; i < this.toolBtns.length; i++) {
-      const btn  = this.toolBtns[i];
+      const btn = this.toolBtns[i];
       if (!btn) continue;
       const active = toolIds[i] === this.currentTool;
       btn.bg.setFillStyle(active ? C_TOOL_ACTIVE : C_LAYER_0);
@@ -328,11 +325,11 @@ export class CreativeHUDScene extends Phaser.Scene {
     }
   }
 
-  // ── repositioning on resize ───────────────────────────────────────────────
+  // ── dynamic repositioning on window resize ─────────────────────────────────
 
   /**
-   * Called every frame – moves elements that depend on canvas height/width
-   * so the HUD adapts to window resizes without rebuilding everything.
+   * Called every frame to reflow elements that pin to canvas edges so the HUD
+   * adapts to window resizes without a full rebuild.
    */
   private repositionDynamic(): void {
     const W = this.scale.width;
@@ -342,17 +339,18 @@ export class CreativeHUDScene extends Phaser.Scene {
     this.panelBg.setSize(PANEL_W, H);
 
     // Layer / tool buttons: pin to bottom of panel
-    const btmReserve = LAYER_BTN_H + TOOL_BTN_H + 28;
+    const btmReserve  = LAYER_BTN_H + TOOL_BTN_H + 30;
     const layerStartY = H - btmReserve;
     const toolStartY  = H - TOOL_BTN_H - 6;
-    const btnW3 = Math.floor(PANEL_W / 3);
-    const btnW4 = Math.floor(PANEL_W / 4);
+    const btnW3       = Math.floor(PANEL_W / 3);
+    const btnW4       = Math.floor(PANEL_W / 4);
 
     this.layerHeaderLbl.setPosition(PANEL_W / 2, layerStartY - 14);
     for (let i = 0; i < this.layerBtns.length; i++) {
       const btn = this.layerBtns[i];
       if (!btn) continue;
-      btn.bg.setPosition(i * btnW3, layerStartY);
+      btn.bg.setPosition(i * btnW3, layerStartY)
+             .setSize(btnW3, LAYER_BTN_H);
       btn.label.setPosition(i * btnW3 + btnW3 / 2, layerStartY + LAYER_BTN_H / 2);
     }
 
@@ -360,11 +358,12 @@ export class CreativeHUDScene extends Phaser.Scene {
     for (let i = 0; i < this.toolBtns.length; i++) {
       const btn = this.toolBtns[i];
       if (!btn) continue;
-      btn.bg.setPosition(i * btnW4, toolStartY);
+      btn.bg.setPosition(i * btnW4, toolStartY)
+             .setSize(btnW4, TOOL_BTN_H);
       btn.label.setPosition(i * btnW4 + btnW4 / 2, toolStartY + TOOL_BTN_H / 2);
     }
 
-    // Minimap: top-right corner
+    // Minimap: top-right
     const mmX = W - MINIMAP_SZ - MINIMAP_M;
     const mmY = MINIMAP_M;
     this.minimapBg.setPosition(mmX - 2, mmY - 2);
@@ -377,10 +376,10 @@ export class CreativeHUDScene extends Phaser.Scene {
     this.infoGfx.setPosition(infoX + 8, infoY + 8);
   }
 
-  // ── minimap ───────────────────────────────────────────────────────────────
+  // ── minimap ────────────────────────────────────────────────────────────────
 
   private buildMinimap(): void {
-    const W  = this.scale.width;
+    const W   = this.scale.width;
     const mmX = W - MINIMAP_SZ - MINIMAP_M;
     const mmY = MINIMAP_M;
 
@@ -394,15 +393,16 @@ export class CreativeHUDScene extends Phaser.Scene {
     this.minimapGfx = this.add.graphics()
       .setDepth(201).setScrollFactor(0);
 
-    // Click on minimap → jump camera
+    // Click on minimap → tell CreativeScene to jump its camera
     this.minimapBg.setInteractive();
     this.minimapBg.on('pointerdown', (ptr: Phaser.Input.Pointer) => {
-      const rel  = ptr.x - (this.minimapBg.x + 2);
+      const relX = ptr.x - (this.minimapBg.x + 2);
       const relY = ptr.y - (this.minimapBg.y + 2);
       const tileScale = WORLD_W / MINIMAP_SZ;
-      const worldX = rel  * tileScale * 32;
-      const worldY = relY * tileScale * 32;
-      gameBus.emit('voidcraft:minimap-click', { worldX, worldY });
+      gameBus.emit('voidcraft:minimap-click', {
+        worldX: relX * tileScale * 32,
+        worldY: relY * tileScale * 32,
+      });
     });
   }
 
@@ -410,58 +410,50 @@ export class CreativeHUDScene extends Phaser.Scene {
     const gfx = this.minimapGfx;
     gfx.clear();
 
-    const cs = this.scene.get('CreativeScene') as CreativeScene;
+    const cs    = this.scene.get('CreativeScene') as CreativeScene;
     const world = cs.world;
     if (!world) return;
 
-    const scale = MINIMAP_SZ / WORLD_W; // px per tile (1.2 for 100-tile world)
+    const scale = MINIMAP_SZ / WORLD_W; // ~1.2 px per tile for a 100-wide world
+    const sz    = Math.max(1, Math.ceil(scale));
 
-    // Draw tiles: background first, then terrain, then foreground
+    // Draw all layers bottom→top so foreground paints over background
     for (let layer = 0; layer < 3; layer++) {
       for (let ty = 0; ty < WORLD_H; ty++) {
         for (let tx = 0; tx < WORLD_W; tx++) {
           const id = world.getTile(tx, ty, layer as 0|1|2);
           if (id === '') continue;
-          // Inline color extraction to avoid repeated getBlock calls
-          const px = Math.floor(tx * scale);
-          const py = Math.floor(ty * scale);
-          const sz = Math.max(1, Math.ceil(scale));
-          // Simple color from block id — we look up from world to keep hot path lean
-          const color = this.blockColor(id);
-          gfx.fillStyle(color, 1);
-          gfx.fillRect(px, py, sz, sz);
+          gfx.fillStyle(this.blockColor(id), 1);
+          gfx.fillRect(Math.floor(tx * scale), Math.floor(ty * scale), sz, sz);
         }
       }
     }
 
-    // Camera viewport rect
-    const camInfo = cs.getCameraInfo();
-    const vx = Math.floor((camInfo.scrollX / 32) * scale);
-    const vy = Math.floor((camInfo.scrollY / 32) * scale);
-    const vw = Math.ceil((camInfo.width  / camInfo.zoom / 32) * scale);
-    const vh = Math.ceil((camInfo.height / camInfo.zoom / 32) * scale);
-    gfx.lineStyle(1, 0xffffff, 0.7);
+    // Camera viewport rect overlay
+    const cam = cs.getCameraInfo();
+    const vx  = Math.floor((cam.scrollX / 32) * scale);
+    const vy  = Math.floor((cam.scrollY / 32) * scale);
+    const vw  = Math.ceil((cam.width  / cam.zoom / 32) * scale);
+    const vh  = Math.ceil((cam.height / cam.zoom / 32) * scale);
+    gfx.lineStyle(1, 0xffffff, 0.75);
     gfx.strokeRect(vx, vy, vw, vh);
   }
 
-  // Tiny lookup to avoid importing getBlock in the hot minimap loop
-  private readonly blockColorCache = new Map<string, number>();
+  /** Cache block colors to avoid repeated map lookups in the minimap hot loop. */
   private blockColor(id: string): number {
     let c = this.blockColorCache.get(id);
     if (c !== undefined) return c;
-    // Import lazily – this runs only once per block type
-    const { getBlock } = require('../../systems/BlockRegistry') as typeof import('../../systems/BlockRegistry');
     const block = getBlock(id);
     c = block?.color ?? 0x444444;
     this.blockColorCache.set(id, c);
     return c;
   }
 
-  // ── info panel ────────────────────────────────────────────────────────────
+  // ── info panel ─────────────────────────────────────────────────────────────
 
   private buildInfoPanel(): void {
-    const W    = this.scale.width;
-    const H    = this.scale.height;
+    const W     = this.scale.width;
+    const H     = this.scale.height;
     const infoX = W - INFO_W - MINIMAP_M;
     const infoY = H - INFO_H - MINIMAP_M;
 
@@ -475,33 +467,31 @@ export class CreativeHUDScene extends Phaser.Scene {
   }
 
   private updateInfoText(): void {
-    const cs      = this.scene.get('CreativeScene') as CreativeScene;
-    const hovered = cs.getHoveredTile();
-    const layerNames = ['BG', 'TR', 'FG'];
-    const lines = [
+    const cs          = this.scene.get('CreativeScene') as CreativeScene;
+    const hovered     = cs.getHoveredTile();
+    const layerNames  = ['BG', 'TR', 'FG'];
+    this.infoGfx.setText([
       `Tile  X:${hovered.x}  Y:${hovered.y}`,
       `Layer ${layerNames[this.activeLayer] ?? '?'}   Tool: ${this.currentTool}`,
       `Block ${this.selectedBlockId}`,
       `Players: ${this.playerCount}`,
-    ];
-    this.infoGfx.setText(lines);
+    ]);
   }
 
-  // ── toast notifications ───────────────────────────────────────────────────
+  // ── toast notifications ────────────────────────────────────────────────────
 
   private showToast(message: string, color = '#78ffd6'): void {
-    // Limit stack
     if (this.toasts.length >= TOAST_MAX) {
       const oldest = this.toasts.shift();
       if (oldest) this.destroyToast(oldest);
     }
 
-    const W   = this.scale.width;
-    const idx = this.toasts.length;
+    const W      = this.scale.width;
     const toastW = 220;
     const toastH = 32;
-    const x = W / 2 - toastW / 2;
-    const y = 14 + idx * (toastH + 6);
+    const idx    = this.toasts.length;
+    const x      = W / 2 - toastW / 2;
+    const y      = 14 + idx * (toastH + 6);
 
     const bg = this.add.rectangle(x, y, toastW, toastH, 0x0a1a10, 0.92)
       .setOrigin(0, 0).setDepth(300).setScrollFactor(0);
@@ -514,25 +504,20 @@ export class CreativeHUDScene extends Phaser.Scene {
     lbl.setAlpha(0);
 
     const tween = this.tweens.add({
-      targets: [bg, lbl],
-      alpha:   { from: 0, to: 1 },
-      duration: 200,
-      ease:    'Quad.easeOut',
+      targets: [bg, lbl], alpha: { from: 0, to: 1 },
+      duration: 200, ease: 'Quad.easeOut',
     });
 
     const toast: Toast = { bg, label: lbl, tween, timer: null };
-    const timer = this.time.delayedCall(TOAST_DURATION, () => this.fadeOutToast(toast));
-    toast.timer = timer;
+    toast.timer = this.time.delayedCall(TOAST_DURATION, () => this.fadeOutToast(toast));
     this.toasts.push(toast);
   }
 
   private fadeOutToast(toast: Toast): void {
     if (toast.tween) toast.tween.stop();
     toast.tween = this.tweens.add({
-      targets:  [toast.bg, toast.label],
-      alpha:    0,
-      duration: 300,
-      ease:     'Quad.easeIn',
+      targets: [toast.bg, toast.label],
+      alpha: 0, duration: 300, ease: 'Quad.easeIn',
       onComplete: () => {
         this.destroyToast(toast);
         this.toasts = this.toasts.filter(t => t !== toast);
@@ -542,8 +527,8 @@ export class CreativeHUDScene extends Phaser.Scene {
   }
 
   private destroyToast(toast: Toast): void {
-    if (toast.tween)  { toast.tween.stop(); }
-    if (toast.timer)  { toast.timer.destroy(); }
+    if (toast.tween) toast.tween.stop();
+    if (toast.timer) toast.timer.destroy();
     toast.bg.destroy();
     toast.label.destroy();
   }
@@ -555,24 +540,23 @@ export class CreativeHUDScene extends Phaser.Scene {
     for (let i = 0; i < this.toasts.length; i++) {
       const t = this.toasts[i];
       if (!t) continue;
-      const x = W / 2 - toastW / 2;
-      const y = 14 + i * (toastH + 6);
+      const tx = W / 2 - toastW / 2;
+      const ty = 14 + i * (toastH + 6);
       this.tweens.add({
-        targets:  [t.bg, t.label],
-        x, y,
-        duration: 150,
-        ease:     'Quad.easeOut',
+        targets: [t.bg, t.label],
+        x: tx, y: ty,
+        duration: 150, ease: 'Quad.easeOut',
       });
     }
   }
 
-  // ── gameBus listeners ────────────────────────────────────────────────────
+  // ── gameBus listeners ──────────────────────────────────────────────────────
 
   private setupBusListeners(): void {
     this.busUnsubs.push(
       gameBus.on('voidcraft:selected-block-change', ({ blockId }) => {
         this.selectedBlockId = blockId;
-        // Switch to matching category so the selected block is visible
+        // Switch tab to the category that contains this block
         for (const [cat, blocks] of blocksByCategory) {
           if (blocks.some(b => b.id === blockId)) {
             if (cat !== this.activeCat) {
@@ -606,7 +590,7 @@ export class CreativeHUDScene extends Phaser.Scene {
     );
   }
 
-  // ── shutdown ──────────────────────────────────────────────────────────────
+  // ── shutdown ───────────────────────────────────────────────────────────────
 
   private onShutdown(): void {
     for (const unsub of this.busUnsubs) unsub();
