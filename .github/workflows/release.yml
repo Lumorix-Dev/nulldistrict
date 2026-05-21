@@ -120,7 +120,7 @@ jobs:
                 items = @(
                   "Launcher-ready beta package for the standalone Null District desktop client.",
                   "Connects to the live Strato backend for accounts, characters, multiplayer, quests, inventory and shop catalog.",
-                  "Includes Signal Haven, District Entrance, Underground Sector A and PvP Breach Zone vertical-slice content."
+                  "Includes Case 001, Case 002, Signal Haven, District Entrance, Underground Sector A, Mirror Archive, Blackout Theater and PvP Breach Zone content."
                 )
               }
             )
