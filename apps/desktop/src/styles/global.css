@@ -750,6 +750,89 @@ input:focus {
   font-size: 13px;
 }
 
+.puzzle-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.puzzle-terminal {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(69, 245, 200, 0.24);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(69, 245, 200, 0.08), rgba(131, 247, 255, 0.03)),
+    rgba(3, 8, 13, 0.7);
+  padding: 13px;
+}
+
+.puzzle-terminal span {
+  color: #d8f7ff;
+  line-height: 1.45;
+}
+
+.puzzle-terminal strong {
+  color: var(--green);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.puzzle-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.puzzle-slots div {
+  min-height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: rgba(131, 247, 255, 0.08);
+  color: var(--cyan);
+  font-weight: 900;
+  font-family: ui-monospace, "Cascadia Code", monospace;
+}
+
+.puzzle-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.puzzle-choice-grid button {
+  min-height: 74px;
+  display: grid;
+  gap: 5px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(3, 8, 13, 0.68);
+  padding: 10px;
+}
+
+.puzzle-choice-grid button:hover {
+  border-color: var(--green);
+  background: rgba(69, 245, 200, 0.09);
+}
+
+.puzzle-choice-grid button strong {
+  color: var(--cyan);
+}
+
+.puzzle-choice-grid button span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.puzzle-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .dialogue-box {
   position: absolute;
   left: 50%;

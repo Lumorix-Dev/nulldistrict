@@ -17,6 +17,7 @@ export interface InteractableDef {
   text?: string[];
   itemId?: string;
   questId?: string;
+  puzzleId?: string;
 }
 
 export interface EnemySpawnDef {
@@ -130,9 +131,10 @@ export const areaDefinitions: AreaDefinition[] = [
         y: 694,
         label: "First Relay",
         questId: "restore-first-relay",
+        puzzleId: "first-relay-harmonics",
         text: [
-          "The relay rejects the first attempt.",
-          "A second touch opens a channel below the street."
+          "The relay is not broken. It is waiting for the right signal order.",
+          "Three clean pulses can open the route below."
         ]
       },
       {
@@ -233,9 +235,10 @@ export const areaDefinitions: AreaDefinition[] = [
         y: 548,
         label: "Broken Terminal",
         questId: "read-broken-terminal",
+        puzzleId: "broken-terminal-memory-lock",
         text: [
           "LOG: Staff evacuation denied by command nobody recognizes.",
-          "MESSAGE: You are not the first version of you."
+          "The readable memory cells are out of order."
         ]
       },
       {

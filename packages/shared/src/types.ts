@@ -92,6 +92,13 @@ export interface CheckoutSessionResponse {
   purchaseId: string;
 }
 
+export interface PuzzleSolveResponse {
+  solved: true;
+  message: string;
+  quests: QuestProgressState[];
+  inventory: InventoryEntry[];
+}
+
 export interface ServerStatus {
   online: boolean;
   message: string;

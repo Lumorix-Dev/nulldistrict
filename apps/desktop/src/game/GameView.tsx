@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DoorOpen, MessageSquare, Package, Pause, Send, Shield, ShoppingBag, Skull, Sparkles, X } from "lucide-react";
 import type { CharacterSummary, InventoryEntry, PublicUser, QuestProgressState, ShopProduct } from "@nulldistrict/shared";
+import { getPuzzleDefinition } from "@nulldistrict/game-data";
 import { api } from "../api/client";
 import { gameBus, type HudState } from "./EventBus";
 import { createNullDistrictGame } from "./createGame";
@@ -33,10 +34,14 @@ export function GameView({
   const [chatLines, setChatLines] = useState<{ username: string; message: string }[]>([]);
   const [prompt, setPrompt] = useState<{ label: string; type: string } | null>(null);
   const [notices, setNotices] = useState<{ id: string; title: string; body: string }[]>([]);
+  const [puzzleId, setPuzzleId] = useState<string | null>(null);
+  const [puzzleSequence, setPuzzleSequence] = useState<string[]>([]);
+  const [puzzleError, setPuzzleError] = useState("");
 
   const realtime = useMemo(() => new RealtimeClient(), []);
   const tokenRef = useRef(token);
   const completedQuestRef = useRef(new Set<string>());
+  const activePuzzle = useMemo(() => (puzzleId ? getPuzzleDefinition(puzzleId) ?? null : null), [puzzleId]);
 
   useEffect(() => {
     tokenRef.current = token;
@@ -96,6 +101,11 @@ export function GameView({
     });
     const offCombatNotice = gameBus.on("combat:notice", (payload) => pushNotice(payload.title, payload.body));
     const offPrompt = gameBus.on("interact:prompt", setPrompt);
+    const offPuzzle = gameBus.on("puzzle:open", ({ puzzleId: nextPuzzleId }) => {
+      setPuzzleId(nextPuzzleId);
+      setPuzzleSequence([]);
+      setPuzzleError("");
+    });
     const offShop = gameBus.on("shop:open", () => {
       setShopOpen(true);
       void api.shopProducts().then((response) => setShopProducts(response.products));
@@ -112,6 +122,7 @@ export function GameView({
       offChat();
       offCombatNotice();
       offPrompt();
+      offPuzzle();
       offShop();
       realtime.disconnect();
       game.destroy(true);
@@ -157,6 +168,39 @@ export function GameView({
     }
   }
 
+  async function submitPuzzle() {
+    if (!activePuzzle) return;
+    setPuzzleError("");
+    try {
+      const response = await api.solvePuzzle(tokenRef.current, {
+        puzzleId: activePuzzle.id,
+        sequence: puzzleSequence
+      });
+      setQuests(response.quests);
+      setInventory(response.inventory);
+      gameBus.emit("quests:update", { quests: response.quests });
+      gameBus.emit("inventory:update", { inventory: response.inventory });
+      pushNotice("Puzzle solved", response.message);
+      setDialogue({ speaker: activePuzzle.title, lines: activePuzzle.successLines });
+      setPuzzleId(null);
+      setPuzzleSequence([]);
+    } catch (err) {
+      setPuzzleError(err instanceof Error ? err.message : "Puzzle failed.");
+    }
+  }
+
+  function closePuzzle() {
+    setPuzzleId(null);
+    setPuzzleSequence([]);
+    setPuzzleError("");
+  }
+
+  function appendPuzzleChoice(choiceId: string) {
+    if (!activePuzzle || puzzleSequence.length >= activePuzzle.slots) return;
+    setPuzzleSequence((sequence) => [...sequence, choiceId]);
+    setPuzzleError("");
+  }
+
   const activeQuest = quests.find((quest) => !quest.completed) ?? quests[0];
 
   return (
@@ -184,10 +228,10 @@ export function GameView({
       </aside>
 
       <div className="combat-strip">
-        <span className={hud?.meleeReady ? "ready" : ""}>J Melee</span>
-        <span className={hud?.abilityReady ? "ready" : ""}>K Ability</span>
+        <span className={hud?.meleeReady ? "ready" : ""}>J Stun</span>
+        <span className={hud?.abilityReady ? "ready" : ""}>K Signal Pulse</span>
         <span>Shift Dash</span>
-        {prompt ? <strong>F {prompt.label}</strong> : null}
+        {prompt ? <strong>F Inspect {prompt.label}</strong> : null}
       </div>
 
       <div className="notice-stack">
@@ -243,6 +287,38 @@ export function GameView({
           <strong>{dialogue.speaker}</strong>
           {dialogue.lines.map((line) => <p key={line}>{line}</p>)}
         </div>
+      ) : null}
+
+      {activePuzzle ? (
+        <Overlay title={activePuzzle.title} onClose={closePuzzle}>
+          <div className="puzzle-panel">
+            <div className="puzzle-terminal">
+              <span>{activePuzzle.prompt}</span>
+              <strong>{activePuzzle.clue}</strong>
+            </div>
+            <div className="puzzle-slots" aria-label="Selected signal sequence">
+              {Array.from({ length: activePuzzle.slots }).map((_, index) => {
+                const selected = activePuzzle.choices.find((choice) => choice.id === puzzleSequence[index]);
+                return <div key={index}>{selected?.label ?? "..."}</div>;
+              })}
+            </div>
+            <div className="puzzle-choice-grid">
+              {activePuzzle.choices.map((choice) => (
+                <button key={choice.id} onClick={() => appendPuzzleChoice(choice.id)}>
+                  <strong>{choice.label}</strong>
+                  <span>{choice.description}</span>
+                </button>
+              ))}
+            </div>
+            <div className="puzzle-actions">
+              <button className="secondary-button" onClick={() => setPuzzleSequence([])}>Clear</button>
+              <button className="primary-button" disabled={puzzleSequence.length !== activePuzzle.slots} onClick={() => void submitPuzzle()}>
+                Decode
+              </button>
+            </div>
+            {puzzleError ? <div className="form-error">{puzzleError}</div> : null}
+          </div>
+        </Overlay>
       ) : null}
 
       {pauseOpen ? (

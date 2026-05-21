@@ -5,6 +5,7 @@ import type {
   InventoryEntry,
   PurchaseHistoryEntry,
   PublicUser,
+  PuzzleSolveResponse,
   QuestProgressState,
   ServerStatus,
   ShopProduct
@@ -64,6 +65,12 @@ export const api = {
       method: "POST",
       token,
       body: JSON.stringify({ itemId })
+    }),
+  solvePuzzle: (token: string, payload: { puzzleId: string; sequence: string[] }) =>
+    request<PuzzleSolveResponse>("/api/puzzles/solve", {
+      method: "POST",
+      token,
+      body: JSON.stringify(payload)
     }),
   quests: (token: string) =>
     request<{ quests: QuestProgressState[] }>("/api/quests", { token }),

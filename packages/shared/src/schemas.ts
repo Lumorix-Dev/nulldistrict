@@ -73,6 +73,11 @@ export const useItemSchema = z.object({
   itemId: z.string().min(1).max(80)
 });
 
+export const puzzleSolveSchema = z.object({
+  puzzleId: z.string().min(1).max(80),
+  sequence: z.array(z.string().min(1).max(32)).min(1).max(8)
+});
+
 export const questProgressBodySchema = z.object({
   questId: questIdSchema,
   amount: z.number().int().min(1).max(10).default(1),

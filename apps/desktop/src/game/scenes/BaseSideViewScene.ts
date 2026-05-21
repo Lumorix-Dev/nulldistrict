@@ -8,7 +8,7 @@ import type {
   QuestId,
   QuestProgressState
 } from "@nulldistrict/shared";
-import { getAreaDefinition, type AreaDefinition, type InteractableDef } from "@nulldistrict/game-data";
+import { getAreaDefinition, getPuzzleDefinition, type AreaDefinition, type InteractableDef } from "@nulldistrict/game-data";
 import { GAME_CONTEXT_KEY, type GameContext } from "../GameContext";
 import { gameBus } from "../EventBus";
 import { InputBindings } from "../systems/InputBindings";
@@ -384,8 +384,18 @@ export class BaseSideViewScene extends Phaser.Scene {
         gameBus.emit("dialogue:open", {
           speaker: "District Seal",
           lines: [
-            "Access denied. The First Relay is still silent.",
-            "Restore the relay before entering Underground Sector A."
+            "Access denied. The First Relay is still scrambled.",
+            "Solve the relay harmonic lock before entering Underground Sector A."
+          ]
+        });
+        return;
+      }
+      if (nearest.def.targetArea === "pvp-breach-zone" && !this.hasQuestComplete("read-broken-terminal")) {
+        gameBus.emit("dialogue:open", {
+          speaker: "Breach Gate",
+          lines: [
+            "The breach refuses blind access.",
+            "Decode the Broken Terminal first. It contains the gate's memory phrase."
           ]
         });
         return;
@@ -410,6 +420,16 @@ export class BaseSideViewScene extends Phaser.Scene {
         title: "Item recovered",
         body: nearest.def.label
       });
+      return;
+    }
+
+    if (nearest.def.puzzleId) {
+      const puzzle = getPuzzleDefinition(nearest.def.puzzleId);
+      if (puzzle && this.hasQuestComplete(puzzle.questId)) {
+        gameBus.emit("dialogue:open", { speaker: puzzle.title, lines: puzzle.successLines });
+        return;
+      }
+      gameBus.emit("puzzle:open", { puzzleId: nearest.def.puzzleId });
       return;
     }
 
