@@ -10,6 +10,8 @@ import { BlackoutTheaterScene } from "./scenes/BlackoutTheaterScene";
 import { PvPZoneScene } from "./scenes/PvPZoneScene";
 import { UIScene } from "./scenes/UIScene";
 import { DialogueScene } from "./scenes/DialogueScene";
+import { CreativeScene } from "./scenes/creative/CreativeScene";
+import { CreativeHUDScene } from "./scenes/creative/CreativeHUDScene";
 import { GAME_CONTEXT_KEY, type GameContext } from "./GameContext";
 
 export function createNullDistrictGame(parent: HTMLElement, context: GameContext) {
@@ -42,7 +44,9 @@ export function createNullDistrictGame(parent: HTMLElement, context: GameContext
       BlackoutTheaterScene,
       PvPZoneScene,
       UIScene,
-      DialogueScene
+      DialogueScene,
+      CreativeScene,
+      CreativeHUDScene,
     ]
   });
   game.registry.set(GAME_CONTEXT_KEY, context);
