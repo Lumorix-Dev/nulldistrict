@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.0-beta.3
+
+- Updated Socket.IO/WebSocket dependency lockfile after audit so the released Windows build and server install use the patched dependency set.
+
 ## v0.1.0-beta.2
 
 - Added stronger beta gameplay loop: locked Sector A progression, enemy HP bars, enemy ranged pressure, usable med patches, combat notices, and clearer quest objective/reward feedback.
