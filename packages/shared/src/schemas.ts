@@ -78,6 +78,16 @@ export const puzzleSolveSchema = z.object({
   sequence: z.array(z.string().min(1).max(32)).min(1).max(8)
 });
 
+export const coopSyncNodeSchema = z.object({
+  areaId: areaIdSchema,
+  nodeId: z.string().min(1).max(80),
+  puzzleId: z.string().min(1).max(80)
+});
+
+export const runExtractSchema = z.object({
+  caseId: z.string().min(1).max(80).default("first-signal")
+});
+
 export const questProgressBodySchema = z.object({
   questId: questIdSchema,
   amount: z.number().int().min(1).max(10).default(1),

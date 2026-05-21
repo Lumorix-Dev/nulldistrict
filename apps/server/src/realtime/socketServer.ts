@@ -3,6 +3,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import { Server } from "socket.io";
 import {
   chatMessageSchema,
+  coopSyncNodeSchema,
   joinInstanceSchema,
   pickupSchema,
   playerNetStateSchema,
@@ -126,6 +127,26 @@ export function createSocketServer(httpServer: HttpServer, prisma: PrismaClient)
       if (!entries) return;
       socket.emit("inventory:updated", { entries });
       socket.emit("quest:updated", await world.quests(socket.data.userId));
+    });
+
+    socket.on("coop:sync-node", async (raw) => {
+      const parsed = coopSyncNodeSchema.safeParse(raw);
+      if (!parsed.success || !socket.data.currentRoom) return;
+      const result = await world.syncNode(socket.data.userId, socket.data.currentRoom, socket.data.characterId, parsed.data);
+      if (!result) return;
+
+      io.to(socket.data.currentRoom).emit("coop:sync-state", result.state);
+      if (!result.state.solved) return;
+
+      const roomSockets = await io.in(socket.data.currentRoom).fetchSockets();
+      await Promise.all(
+        roomSockets
+          .filter((participant) => result.updatedUserIds.includes(participant.data.userId))
+          .map(async (participant) => {
+            participant.emit("inventory:updated", { entries: await world.inventory(participant.data.userId) });
+            participant.emit("quest:updated", await world.quests(participant.data.userId));
+          })
+      );
     });
 
     socket.on("quest:choice", async (payload) => {

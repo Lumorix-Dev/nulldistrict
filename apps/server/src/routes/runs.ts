@@ -1,8 +1,9 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { Router } from "express";
-import type { QuestId } from "@nulldistrict/shared";
-import { firstSignalCase, getItemDefinition } from "@nulldistrict/game-data";
+import { runExtractSchema, type QuestId } from "@nulldistrict/shared";
+import { getCaseDefinition, getItemDefinition } from "@nulldistrict/game-data";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/auth.js";
+import { validateBody } from "../middleware/validate.js";
 import { advanceQuest, grantItem, listInventory } from "../utils/gameRewards.js";
 import { asyncHandler, HttpError } from "../utils/http.js";
 
@@ -12,9 +13,15 @@ export function runRoutes(prisma: PrismaClient) {
 
   router.post(
     "/extract",
+    validateBody(runExtractSchema),
     asyncHandler(async (req, res) => {
       const auth = (req as AuthenticatedRequest).auth;
-      const caseFile = firstSignalCase;
+      const body = req.body as typeof runExtractSchema._output;
+      const caseFile = getCaseDefinition(body.caseId);
+
+      if (!caseFile) {
+        throw new HttpError(404, "Case file not found.", "CASE_NOT_FOUND");
+      }
 
       const progress = await prisma.questProgress.findMany({
         where: {
@@ -26,7 +33,7 @@ export function runRoutes(prisma: PrismaClient) {
       const completed = new Set(progress.filter((quest) => quest.completed).map((quest) => quest.questId));
       const missingQuest = caseFile.requiredQuestIds.find((questId) => !completed.has(questId));
       if (missingQuest) {
-        throw new HttpError(400, "Case evidence is incomplete. Finish the relay, fragments and terminal before extraction.", "CASE_INCOMPLETE");
+        throw new HttpError(400, "Case evidence is incomplete. Finish every case-board objective before extraction.", "CASE_INCOMPLETE");
       }
 
       const evidence = await prisma.inventoryItem.findUnique({
@@ -57,12 +64,15 @@ export function runRoutes(prisma: PrismaClient) {
       const rewardItem = getItemDefinition(caseFile.rewardItemId);
 
       await prisma.loreFragment.upsert({
-        where: { userId_fragmentId: { userId: auth.userId, fragmentId: "case-001-first-signal" } },
+        where: { userId_fragmentId: { userId: auth.userId, fragmentId: `case-${caseFile.id}` } },
         create: {
           userId: auth.userId,
-          fragmentId: "case-001-first-signal",
+          fragmentId: `case-${caseFile.id}`,
           title: caseFile.title,
-          body: "The first stable route into Null District was proven by recovered fragments, a decoded terminal memory and a Relay Core extracted to Signal Haven."
+          body:
+            caseFile.id === "first-signal"
+              ? "The first stable route into Null District was proven by recovered fragments, a decoded terminal memory and a Relay Core extracted to Signal Haven."
+              : "The Mirror Archive case proves the district can copy player routes, lock them behind synchronized operators and replay them through blackout media."
         },
         update: {}
       });
@@ -82,6 +92,7 @@ export function runRoutes(prisma: PrismaClient) {
 
       res.json({
         extracted: true,
+        caseId: caseFile.id,
         caseTitle: caseFile.title,
         rank: "A",
         recoveredEvidence: evidence?.quantity ?? 0,

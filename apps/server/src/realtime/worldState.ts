@@ -3,9 +3,11 @@ import { randomUUID } from "node:crypto";
 import type {
   AreaId,
   ChatMessage,
+  CoopSyncState,
   DamageEvent,
   EnemyNetState,
   PlayerNetState,
+  QuestId,
 } from "@nulldistrict/shared";
 import { CHAT_MAX_MESSAGES_PER_WINDOW, CHAT_WINDOW_MS, MAX_INSTANCE_PLAYERS } from "@nulldistrict/shared";
 import { areaDefinitions, getAreaDefinition } from "@nulldistrict/game-data";
@@ -18,9 +20,12 @@ interface InstanceState {
   players: Map<string, PlayerNetState>;
   enemies: EnemyNetState[];
   enemyDirection: Map<string, 1 | -1>;
+  syncNodes: Map<string, { nodeId: string; puzzleId: string; characterId: string; userId: string; until: number }>;
   chatWindows: Map<string, number[]>;
   createdAt: number;
 }
+
+type ActiveSyncNode = InstanceState["syncNodes"] extends Map<string, infer T> ? T : never;
 
 function createEnemies(areaId: AreaId): EnemyNetState[] {
   const area = getAreaDefinition(areaId);
@@ -61,6 +66,7 @@ export class WorldState {
       players: new Map(),
       enemies: createEnemies(areaId),
       enemyDirection: new Map(createEnemies(areaId).map((enemy) => [enemy.id, 1 as const])),
+      syncNodes: new Map(),
       chatWindows: new Map(),
       createdAt: Date.now()
     };
@@ -228,6 +234,80 @@ export class WorldState {
     return { damage, rewards: undefined };
   }
 
+  public async syncNode(
+    userId: string,
+    room: string | undefined,
+    characterId: string | undefined,
+    payload: { areaId: AreaId; nodeId: string; puzzleId: string }
+  ): Promise<{ state: CoopSyncState; updatedUserIds: string[] } | undefined> {
+    if (!room || !characterId) return undefined;
+    const instance = this.instances.get(room);
+    const player = instance?.players.get(characterId);
+    if (!instance || !player || instance.areaId !== payload.areaId) return undefined;
+
+    const area = getAreaDefinition(payload.areaId);
+    const node = area.interactables.find(
+      (entry) => entry.id === payload.nodeId && entry.action === "sync-node" && entry.puzzleId === payload.puzzleId
+    );
+    if (!node) return undefined;
+
+    const distance = Math.hypot(player.x - node.x, player.y - node.y);
+    if (distance > 180) return undefined;
+
+    const now = Date.now();
+    for (const [nodeId, active] of instance.syncNodes.entries()) {
+      if (active.until <= now) instance.syncNodes.delete(nodeId);
+    }
+
+    instance.syncNodes.set(payload.nodeId, {
+      nodeId: payload.nodeId,
+      puzzleId: payload.puzzleId,
+      characterId,
+      userId,
+      until: now + 20_000
+    });
+
+    const puzzleNodeIds = area.interactables
+      .filter((entry) => entry.action === "sync-node" && entry.puzzleId === payload.puzzleId)
+      .map((entry) => entry.id);
+    const activeNodes = puzzleNodeIds
+      .map((nodeId) => instance.syncNodes.get(nodeId))
+      .filter((entry): entry is ActiveSyncNode => entry !== undefined && entry.until > now);
+    const activeNodeIds = [...new Set(activeNodes.map((entry) => entry.nodeId))];
+    const activeCharacters = new Set(activeNodes.map((entry) => entry.characterId));
+    const requiredNodes = Math.min(2, puzzleNodeIds.length);
+    const soloReroute = instance.players.size === 1 && activeNodeIds.length >= requiredNodes;
+    const solved = activeNodeIds.length >= requiredNodes && (activeCharacters.size >= requiredNodes || soloReroute);
+
+    let updatedUserIds: string[] = [];
+    if (solved) {
+      updatedUserIds = [...new Set([...instance.players.values()].map((participant) => participant.userId))];
+      await Promise.all(
+        updatedUserIds.map(async (participantUserId) => {
+          await advanceQuest(this.prisma, participantUserId, "synchronize-archive-nodes");
+          const existingKey = await this.prisma.inventoryItem.findUnique({
+            where: { userId_itemId: { userId: participantUserId, itemId: "archive_key" } },
+            select: { id: true }
+          });
+          if (!existingKey) await grantItem(this.prisma, participantUserId, "archive_key", 1);
+        })
+      );
+    }
+
+    return {
+      state: {
+        puzzleId: payload.puzzleId,
+        activeNodes: activeNodeIds,
+        requiredNodes,
+        solved,
+        message: solved
+          ? "Twin sync accepted. Archive Key granted to this instance."
+          : `${activeNodeIds.length}/${requiredNodes} sync nodes armed. A second operator or a fast solo reroute must arm the mirror node within 20 seconds.`
+      },
+      updatedUserIds
+    };
+  }
+
   public canSendChat(room: string, userId: string) {
     const instance = this.instances.get(room);
     if (!instance) return false;
@@ -271,9 +351,13 @@ export class WorldState {
 
     const itemId = pickup.itemId ?? "signal_fragment";
     const inventory = await grantItem(this.prisma, userId, itemId, 1);
-    if (itemId === "signal_fragment") {
-      await advanceQuest(this.prisma, userId, "collect-signal-fragments");
-    }
+    const questByPickupItem: Partial<Record<string, QuestId>> = {
+      signal_fragment: "collect-signal-fragments",
+      echo_residue: "scan-echo-residue",
+      theater_reel: "recover-theater-reel"
+    };
+    const questId = questByPickupItem[itemId];
+    if (questId) await advanceQuest(this.prisma, userId, questId);
     return inventory;
   }
 

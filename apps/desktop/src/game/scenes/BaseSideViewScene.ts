@@ -95,6 +95,8 @@ export class BaseSideViewScene extends Phaser.Scene {
       haven: [0x05070b, 0x071316, 0x0f2530],
       entrance: [0x07080e, 0x12101b, 0x162536],
       "sector-a": [0x040609, 0x0e1320, 0x1a1130],
+      archive: [0x05070b, 0x07121b, 0x102c35],
+      theater: [0x060407, 0x180b12, 0x2d1225],
       pvp: [0x09040a, 0x1b0c14, 0x2b1220]
     };
     const fallback: [number, number, number] = [0x05070b, 0x071316, 0x0f2530];
@@ -400,6 +402,29 @@ export class BaseSideViewScene extends Phaser.Scene {
         });
         return;
       }
+      if (nearest.def.targetArea === "mirror-archive" && !this.hasQuestComplete("extract-first-signal")) {
+        gameBus.emit("dialogue:open", {
+          speaker: "Mirror Archive Seal",
+          lines: [
+            "The Archive rejects incomplete routes.",
+            "Extract Case 001 in Signal Haven first. The second path only appears after proof is banked."
+          ]
+        });
+        return;
+      }
+      if (
+        nearest.def.targetArea === "blackout-theater" &&
+        (!this.hasQuestComplete("synchronize-archive-nodes") || !this.hasQuestComplete("decode-mirror-archive"))
+      ) {
+        gameBus.emit("dialogue:open", {
+          speaker: "Theater Lock",
+          lines: [
+            "The projector will not open on a single memory.",
+            "Synchronize both Archive nodes with another operator and decode the Mirror Cipher first."
+          ]
+        });
+        return;
+      }
       if (nearest.def.targetArea === "district-entrance") {
         void this.context.api.advanceQuest({ questId: "enter-null-district", amount: 1 });
       }
@@ -429,6 +454,17 @@ export class BaseSideViewScene extends Phaser.Scene {
     }
     if (nearest.def.action === "extract-case") {
       gameBus.emit("run:extract", undefined);
+      return;
+    }
+    if (nearest.def.action === "sync-node") {
+      if (nearest.def.text) {
+        gameBus.emit("dialogue:open", { speaker: nearest.def.label, lines: nearest.def.text });
+      }
+      this.context.realtime.socket?.emit("coop:sync-node", {
+        areaId: this.areaId,
+        nodeId: nearest.def.id,
+        puzzleId: nearest.def.puzzleId ?? nearest.def.id
+      });
       return;
     }
 
@@ -606,6 +642,8 @@ export class BaseSideViewScene extends Phaser.Scene {
       "signal-haven": "HubScene",
       "district-entrance": "DistrictEntranceScene",
       "underground-sector-a": "UndergroundSectorAScene",
+      "mirror-archive": "MirrorArchiveScene",
+      "blackout-theater": "BlackoutTheaterScene",
       "pvp-breach-zone": "PvPZoneScene"
     }[areaId];
   }

@@ -73,11 +73,11 @@ export const api = {
       token,
       body: JSON.stringify(payload)
     }),
-  extractRun: (token: string) =>
+  extractRun: (token: string, caseId = "first-signal") =>
     request<RunExtractionResponse>("/api/runs/extract", {
       method: "POST",
       token,
-      body: JSON.stringify({})
+      body: JSON.stringify({ caseId })
     }),
   quests: (token: string) =>
     request<{ quests: QuestProgressState[] }>("/api/quests", { token }),

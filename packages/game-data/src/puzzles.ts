@@ -76,6 +76,32 @@ export const puzzleDefinitions: PuzzleDefinition[] = [
     ],
     failureLine: "The terminal blanks out. The sentence is close, but the subject is wrong.",
     rewardItemId: "broken_terminal_log"
+  },
+  {
+    id: "mirror-archive-cipher",
+    title: "Mirror Archive: Route Cipher",
+    areaId: "mirror-archive",
+    interactableId: "mirror-cipher-terminal",
+    slots: 4,
+    prompt: "Name the copied route before the Archive overwrites the live path.",
+    clue: "The copied route begins with the operator, returns as an echo, opens a door, then asks where it came from.",
+    choices: [
+      { id: "self", label: "SELF", description: "The operator entering the copied route." },
+      { id: "echo", label: "ECHO", description: "The route after the archive repeats it." },
+      { id: "door", label: "DOOR", description: "The threshold made from copied memory." },
+      { id: "origin", label: "ORIGIN", description: "The place the copy cannot invent." },
+      { id: "void", label: "VOID", description: "Dead space between two stable signals." }
+    ],
+    solution: ["self", "echo", "door", "origin"],
+    questId: "decode-mirror-archive",
+    storyFlag: { key: "decoded_mirror_archive", value: true },
+    successMessage: "Mirror route decoded. The Blackout Theater pocket is now stable.",
+    successLines: [
+      "The Archive stops reflecting your last step.",
+      "A new route appears in the dark: SELF. ECHO. DOOR. ORIGIN.",
+      "Somewhere ahead, a theater projector starts running by itself."
+    ],
+    failureLine: "The Archive copies your mistake and closes the route."
   }
 ];
 

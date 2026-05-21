@@ -48,6 +48,42 @@ export const itemDefinitions: ItemDefinition[] = [
     stackLimit: 1
   },
   {
+    id: "echo_residue",
+    name: "Echo Residue",
+    description: "A mirrored signal trace used as evidence in Archive anomalies.",
+    type: "material",
+    rarity: "rare",
+    iconKey: "icon-echo-residue",
+    stackLimit: 999
+  },
+  {
+    id: "archive_key",
+    name: "Archive Key",
+    description: "A synchronized memory key created when two operators stabilize separated archive nodes.",
+    type: "quest",
+    rarity: "epic",
+    iconKey: "icon-archive-key",
+    stackLimit: 1
+  },
+  {
+    id: "theater_reel",
+    name: "Blackout Theater Reel",
+    description: "A corrupted reel of district footage. It shows a street that has not been built yet.",
+    type: "lore",
+    rarity: "epic",
+    iconKey: "icon-theater-reel",
+    stackLimit: 1
+  },
+  {
+    id: "mirror_casefile",
+    name: "Mirror Archive Casefile",
+    description: "A completed casefile proving the Archive can copy operators, routes and evidence states.",
+    type: "lore",
+    rarity: "epic",
+    iconKey: "icon-mirror-casefile",
+    stackLimit: 1
+  },
+  {
     id: "med_patch",
     name: "Med Patch",
     description: "Restores a small amount of health. Field issue, not marketplace power.",

@@ -71,6 +71,72 @@ export const questDefinitions: QuestDefinition[] = [
     startsUnlocked: true
   },
   {
+    id: "enter-mirror-archive",
+    title: "Enter the Mirror Archive",
+    chapter: "The Mirror Archive",
+    description: "A second anomaly opens after the first stable extraction. The Archive repeats routes it should not know.",
+    objective: "Reach Mirror Archive from Underground Sector A.",
+    target: 1,
+    rewardXp: 90,
+    rewardSoftCurrency: 25,
+    startsUnlocked: true
+  },
+  {
+    id: "scan-echo-residue",
+    title: "Scan 4 Echo Residues",
+    chapter: "The Mirror Archive",
+    description: "Echo residue marks places where the district copied an operator path.",
+    objective: "Recover 4 Echo Residues inside Mirror Archive.",
+    target: 4,
+    rewardXp: 130,
+    rewardSoftCurrency: 40,
+    startsUnlocked: true
+  },
+  {
+    id: "synchronize-archive-nodes",
+    title: "Synchronize Archive Nodes",
+    chapter: "The Mirror Archive",
+    description: "Two separated nodes must be held by two operators in the same instance.",
+    objective: "Have two players synchronize West and East Archive Nodes.",
+    target: 1,
+    rewardXp: 180,
+    rewardSoftCurrency: 60,
+    startsUnlocked: true
+  },
+  {
+    id: "decode-mirror-archive",
+    title: "Decode the Mirror Archive",
+    chapter: "The Mirror Archive",
+    description: "The archive answers only if the copied route is named in the correct order.",
+    objective: "Solve the Mirror Archive cipher.",
+    target: 1,
+    rewardXp: 160,
+    rewardSoftCurrency: 55,
+    startsUnlocked: true
+  },
+  {
+    id: "recover-theater-reel",
+    title: "Recover the Blackout Reel",
+    chapter: "The Mirror Archive",
+    description: "The archive points to footage stored in a sealed theater pocket.",
+    objective: "Recover the Blackout Theater Reel.",
+    target: 1,
+    rewardXp: 150,
+    rewardSoftCurrency: 50,
+    startsUnlocked: true
+  },
+  {
+    id: "extract-mirror-case",
+    title: "Extract the Mirror Case",
+    chapter: "The Mirror Archive",
+    description: "Bring synchronized archive proof back to Signal Haven.",
+    objective: "Return to Signal Haven with residue, archive key, decoded cipher and theater reel.",
+    target: 1,
+    rewardXp: 360,
+    rewardSoftCurrency: 140,
+    startsUnlocked: true
+  },
+  {
     id: "defeat-corrupted-scout",
     title: "Contain a Corrupted Scout",
     chapter: "The First Signal",

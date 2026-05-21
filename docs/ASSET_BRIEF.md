@@ -42,6 +42,24 @@ Use strong silhouettes, limited animation, sharp UI screens, eerie signal effect
 - Glitch particles: small cyan/green/pink fragments.
 - Fog/static overlay strips.
 
+## Pixel Art Priority 4: Case 002 Mirror Archive
+
+- Mirror Archive tileset: reflective black floor, cyan memory seams, cracked server walls.
+- Mirror Archive background: huge dark archive shelves, cable silhouettes, faint duplicate operator shadows.
+- Archive Entry Log terminal, idle/open/glitch states.
+- Echo Residue pickup, 4-frame shimmer animation.
+- West Sync Node and East Sync Node, idle/armed/solved states with matching silhouettes.
+- Archive Key pickup/icon, bright enough to read at 16x16 and 32x32.
+- Mirror Cipher terminal, locked/active/decoded states.
+- Blackout Theater tileset: old projector floor, torn screen, red emergency edge light.
+- Blackout Projector object, reel spin animation, flicker frames.
+- Blackout Theater Reel pickup/icon.
+- Mirror Archive Casefile icon and full casefile cover.
+- Archive Wraith variant: reflection/glass silhouette.
+- Theater Wraith variant: long projector-shadow silhouette.
+- Area transition door sprites for Sector A -> Mirror Archive and Mirror Archive -> Blackout Theater.
+- Co-op sync VFX: two vertical pulses, one west and one east, plus a center snap when solved.
+
 ## UI Art
 
 - Lumorix Null District app icon.
@@ -79,6 +97,13 @@ Use strong silhouettes, limited animation, sharp UI screens, eerie signal effect
 - Player death/static loss.
 - Chat send/receive subtle tick.
 - Shop open soft terminal sound.
+- Mirror Archive ambient loop: cold room tone, reversed clicks, distant hard-drive pulses.
+- Sync node arm sound, short and positional.
+- Sync solved sound, two-tone lock closure.
+- Mirror Cipher open loop, low static with glassy clicks.
+- Blackout Theater ambient loop, projector motor, muted crowd-memory texture.
+- Blackout Reel pickup sting.
+- Archive route unlock sting.
 
 ## Trailer / Marketing Capture Needed
 
@@ -88,7 +113,10 @@ Use strong silhouettes, limited animation, sharp UI screens, eerie signal effect
 - 10 second clip: Wraith/Scout pressure while escaping.
 - 10 second clip: Broken Terminal decoded.
 - 8 second clip: extraction complete and reward overlay.
+- 10 second clip: Mirror Archive co-op sync with two players.
+- 10 second clip: Blackout Theater projector and Reel pickup.
 - Clean screenshots: Signal Haven, District Entrance, Underground Sector A, puzzle UI, Case Board, shop policy/cosmetic product.
+- Clean screenshots: Mirror Archive, Blackout Theater, co-op sync notice, Mirror Case extraction.
 
 ## Monetization Assets
 

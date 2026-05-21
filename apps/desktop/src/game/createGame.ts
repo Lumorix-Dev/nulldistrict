@@ -5,6 +5,8 @@ import { MainMenuScene } from "./scenes/MainMenuScene";
 import { HubScene } from "./scenes/HubScene";
 import { DistrictEntranceScene } from "./scenes/DistrictEntranceScene";
 import { UndergroundSectorAScene } from "./scenes/UndergroundSectorAScene";
+import { MirrorArchiveScene } from "./scenes/MirrorArchiveScene";
+import { BlackoutTheaterScene } from "./scenes/BlackoutTheaterScene";
 import { PvPZoneScene } from "./scenes/PvPZoneScene";
 import { UIScene } from "./scenes/UIScene";
 import { DialogueScene } from "./scenes/DialogueScene";
@@ -36,6 +38,8 @@ export function createNullDistrictGame(parent: HTMLElement, context: GameContext
       HubScene,
       DistrictEntranceScene,
       UndergroundSectorAScene,
+      MirrorArchiveScene,
+      BlackoutTheaterScene,
       PvPZoneScene,
       UIScene,
       DialogueScene

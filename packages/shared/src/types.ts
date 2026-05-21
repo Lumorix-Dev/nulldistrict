@@ -101,6 +101,7 @@ export interface PuzzleSolveResponse {
 
 export interface RunExtractionResponse {
   extracted: true;
+  caseId: string;
   caseTitle: string;
   rank: "C" | "B" | "A" | "S";
   recoveredEvidence: number;
@@ -112,6 +113,14 @@ export interface RunExtractionResponse {
   };
   quests: QuestProgressState[];
   inventory: InventoryEntry[];
+}
+
+export interface CoopSyncState {
+  puzzleId: string;
+  activeNodes: string[];
+  requiredNodes: number;
+  solved: boolean;
+  message: string;
 }
 
 export interface ServerStatus {
@@ -193,6 +202,7 @@ export interface ClientToServerEvents {
   "inventory:pickup": (payload: { pickupId: string; areaId: AreaId; x: number; y: number }) => void;
   "player:death": (payload: { characterId: string; areaId: AreaId }) => void;
   "quest:choice": (payload: { questId: QuestId; flag: string; value: boolean }) => void;
+  "coop:sync-node": (payload: { areaId: AreaId; nodeId: string; puzzleId: string }) => void;
   "chat:send": (payload: { areaId: AreaId; message: string }) => void;
   "party:invite": (payload: { username: string }) => void;
 }
@@ -208,6 +218,7 @@ export interface ServerToClientEvents {
   "combat:defeated": (payload: { targetId: string; rewards?: InventoryEntry[] }) => void;
   "inventory:updated": (payload: { entries: InventoryEntry[] }) => void;
   "quest:updated": (payload: QuestProgressState[]) => void;
+  "coop:sync-state": (payload: CoopSyncState) => void;
   "player:death-confirmed": (payload: { lostSoftCurrency: number; respawnAreaId: AreaId }) => void;
   "chat:message": (payload: ChatMessage) => void;
   "party:notice": (payload: { message: string }) => void;

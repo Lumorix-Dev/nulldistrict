@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DoorOpen, MessageSquare, Package, Pause, Send, Shield, ShoppingBag, Skull, Sparkles, X } from "lucide-react";
-import type { CharacterSummary, InventoryEntry, PlayerNetState, PublicUser, QuestProgressState, ShopProduct, WorldSnapshot } from "@nulldistrict/shared";
-import { getPuzzleDefinition } from "@nulldistrict/game-data";
+import type { CharacterSummary, CoopSyncState, InventoryEntry, PlayerNetState, PublicUser, QuestProgressState, ShopProduct, WorldSnapshot } from "@nulldistrict/shared";
+import { caseDefinitions, getPuzzleDefinition } from "@nulldistrict/game-data";
 import { api } from "../api/client";
 import { gameBus, type HudState } from "./EventBus";
 import { createNullDistrictGame } from "./createGame";
@@ -123,8 +123,22 @@ export function GameView({
       const players = (event as CustomEvent<PlayerNetState[]>).detail;
       setSquadCount(Math.max(1, players.length));
     };
+    const onCoopSync = (event: Event) => {
+      const sync = (event as CustomEvent<CoopSyncState>).detail;
+      pushNotice(sync.solved ? "Co-op lock solved" : "Sync node armed", sync.message);
+      if (sync.solved) {
+        setDialogue({
+          speaker: "Mirror Archive",
+          lines: [
+            "Two routes agreed at the same time.",
+            "Archive Key minted for the active instance. The Theater route is now readable."
+          ]
+        });
+      }
+    };
     realtime.addEventListener("snapshot", onSnapshot);
     realtime.addEventListener("players", onPlayers);
+    realtime.addEventListener("coop-sync", onCoopSync);
 
     return () => {
       offHud();
@@ -142,6 +156,7 @@ export function GameView({
       offShop();
       realtime.removeEventListener("snapshot", onSnapshot);
       realtime.removeEventListener("players", onPlayers);
+      realtime.removeEventListener("coop-sync", onCoopSync);
       realtime.disconnect();
       game.destroy(true);
     };
@@ -175,7 +190,7 @@ export function GameView({
     if (extracting) return;
     setExtracting(true);
     try {
-      const response = await api.extractRun(tokenRef.current);
+      const response = await api.extractRun(tokenRef.current, activeCase.id);
       setQuests(response.quests);
       setInventory(response.inventory);
       gameBus.emit("quests:update", { quests: response.quests });
@@ -246,12 +261,17 @@ export function GameView({
 
   const activeQuest = quests.find((quest) => !quest.completed) ?? quests[0];
   const questById = new Map(quests.map((quest) => [quest.questId, quest]));
-  const evidenceQuest = questById.get("collect-signal-fragments");
-  const caseExtracted = questById.get("extract-first-signal")?.completed ?? false;
-  const caseReady =
-    (questById.get("restore-first-relay")?.completed ?? false) &&
-    (questById.get("read-broken-terminal")?.completed ?? false) &&
-    (evidenceQuest?.completed ?? false);
+  const lastCase = caseDefinitions[caseDefinitions.length - 1] as (typeof caseDefinitions)[number];
+  const activeCase =
+    caseDefinitions.find((caseFile) => !(questById.get(caseFile.extractionQuestId)?.completed ?? false)) ??
+    lastCase;
+  const caseQuestStates = activeCase.requiredQuestIds.map((questId, index) => ({
+    questId,
+    label: activeCase.objectiveLabels[index] ?? questById.get(questId)?.title ?? questId,
+    quest: questById.get(questId)
+  }));
+  const caseExtracted = questById.get(activeCase.extractionQuestId)?.completed ?? false;
+  const caseReady = caseQuestStates.every(({ quest }) => quest?.completed ?? false);
 
   return (
     <main className="game-shell">
@@ -278,12 +298,14 @@ export function GameView({
       </aside>
 
       <aside className="case-board">
-        <span>CASE 001</span>
-        <strong>The First Signal</strong>
+        <span>{activeCase.chapter.toUpperCase()}</span>
+        <strong>{activeCase.title}</strong>
         <div>
-          <i className={(evidenceQuest?.current ?? 0) >= 3 ? "done" : ""}>Evidence {(evidenceQuest?.current ?? 0)}/3</i>
-          <i className={questById.get("restore-first-relay")?.completed ? "done" : ""}>Relay</i>
-          <i className={questById.get("read-broken-terminal")?.completed ? "done" : ""}>Terminal</i>
+          {caseQuestStates.map(({ questId, label, quest }) => (
+            <i className={quest?.completed ? "done" : ""} key={questId}>
+              {label} {quest && quest.target > 1 ? `${quest.current}/${quest.target}` : ""}
+            </i>
+          ))}
           <i className={caseExtracted ? "done" : caseReady ? "ready" : ""}>Extract</i>
         </div>
         <small>{squadCount} operator{squadCount === 1 ? "" : "s"} in instance</small>
@@ -319,7 +341,7 @@ export function GameView({
         <button title="Inventory" onClick={() => setInventoryOpen(true)}><Package /></button>
         <button title="Chat" onClick={() => setChatOpen((open) => !open)}><MessageSquare /></button>
         {hud?.areaId === "signal-haven" ? (
-          <button className={caseReady && !caseExtracted ? "extract-ready" : ""} title="Extract Case" onClick={() => void extractCase()}><DoorOpen /></button>
+          <button className={caseReady && !caseExtracted ? "extract-ready" : ""} title={`Extract ${activeCase.title}`} onClick={() => void extractCase()}><DoorOpen /></button>
         ) : null}
         {hud?.areaId === "signal-haven" ? (
           <button title="Null Market" onClick={() => gameBus.emit("shop:open", undefined)}><ShoppingBag /></button>

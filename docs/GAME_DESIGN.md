@@ -26,6 +26,8 @@ The game should be sold as a mysterious online investigation, not as another com
 - Hub: `Signal Haven`
 - Area 1: `District Entrance`
 - Area 2: `Underground Sector A`
+- Area 3: `Mirror Archive`
+- Area 4: `Blackout Theater`
 - Optional PvP: `PvP Breach Zone`
 
 ## Core Verbs
@@ -54,6 +56,8 @@ Beta puzzle examples:
 
 - `First Relay: Harmonic Lock`: rebuild the LUX / NULL / ECHO signal sequence to unlock Underground Sector A.
 - `Broken Terminal: Memory Lock`: reconstruct the hidden sentence `THE DISTRICT REMEMBERS YOU` to recover lore.
+- `Mirror Archive: Twin Sync`: two players, or one very fast solo route in beta, must arm separated nodes in one instance.
+- `Mirror Archive: Route Cipher`: decode SELF / ECHO / DOOR / ORIGIN to stabilize the theater route.
 
 ## Beta Case 001
 
@@ -71,6 +75,26 @@ Required objectives:
 Optional pressure objective:
 
 - Contain a Corrupted Scout if it blocks the route.
+
+## Beta Case 002
+
+`Case 002: Mirror Archive`
+
+Required objectives:
+
+1. Extract `Case 001: The First Signal`.
+2. Enter Mirror Archive from Underground Sector A.
+3. Recover 4 Echo Residues.
+4. Synchronize the West and East Archive Nodes.
+5. Decode `Mirror Archive: Route Cipher`.
+6. Enter Blackout Theater and recover the Blackout Reel.
+7. Return to Signal Haven and extract the Mirror Case.
+
+Design intent:
+
+- This is the first case that sells the game as online mystery, not only side-view combat.
+- The Twin Sync lock is co-op-first. The beta still allows a fast solo reroute so single-player testing is not blocked.
+- Combat exists as route pressure while players split up, regroup and decide whether to extract.
 
 ## Progression
 

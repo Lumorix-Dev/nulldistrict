@@ -11,6 +11,13 @@ Dark 2D side-view online mystery RPG beta for PC. This repository is the standal
 - `packages/game-data`: editable quests, items, cosmetics, shop products, skills and maps.
 - `assets`: replacement-ready pixel-art asset folders.
 
+Current playable content:
+
+- `Case 001: The First Signal` across Signal Haven, District Entrance and Underground Sector A.
+- `Case 002: Mirror Archive` across Mirror Archive and Blackout Theater.
+- Server-validated puzzles, evidence pickups, case extraction, inventory, multiplayer visibility and instance chat.
+- Co-op-first Archive node sync, with a beta solo reroute fallback so testing is not blocked.
+
 ## Local Requirements
 
 - Node.js 20.11+.
@@ -88,6 +95,12 @@ git push origin main --tags
 ```
 
 The release workflow builds Windows installer artifacts and uploads them to the GitHub Release.
+
+Quereinsteiger/start-here docs:
+
+- `docs/PROJECT_ONBOARDING.md`: where code/assets/content live and how to add cases.
+- `docs/JUNE_1_PUBLIC_BETA_PLAN.md`: realistic June 1 beta scope, asset priorities and Stripe order.
+- `docs/ASSET_BRIEF.md`: full pixel art, UI, audio and trailer capture list.
 
 First-time GitHub setup helper:
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.0-beta.6
+
+- Added `Case 002: Mirror Archive` with new evidence, quests, extraction data and case-board support.
+- Added playable `Mirror Archive` and `Blackout Theater` areas with transitions, pickups, terminals, enemies and puzzle hooks.
+- Added server-authoritative co-op sync node mechanic for the Archive, including multiplayer reward updates and a solo beta reroute fallback.
+- Generalized case extraction so future cases can use the same backend route instead of hardcoded Case 001 logic.
+- Added project onboarding and June 1 public beta planning docs for contributors, uploads, releases and asset production.
+
 ## v0.1.0-beta.5
 
 - Reworked the core direction into a co-op mystery extraction loop: recover evidence, solve route puzzles, bring proof back to Signal Haven and bank case rewards.

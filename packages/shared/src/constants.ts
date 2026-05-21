@@ -12,6 +12,8 @@ export const AREA_IDS = [
   "signal-haven",
   "district-entrance",
   "underground-sector-a",
+  "mirror-archive",
+  "blackout-theater",
   "pvp-breach-zone"
 ] as const;
 
@@ -20,6 +22,12 @@ export const QUEST_IDS = [
   "restore-first-relay",
   "collect-signal-fragments",
   "extract-first-signal",
+  "enter-mirror-archive",
+  "scan-echo-residue",
+  "synchronize-archive-nodes",
+  "decode-mirror-archive",
+  "recover-theater-reel",
+  "extract-mirror-case",
   "defeat-corrupted-scout",
   "read-broken-terminal"
 ] as const;

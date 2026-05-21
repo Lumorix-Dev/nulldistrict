@@ -3,6 +3,7 @@ import type {
   ClientToServerEvents,
   ServerToClientEvents,
   AreaId,
+  CoopSyncState,
   PlayerNetState,
   EnemyNetState,
   InventoryEntry,
@@ -59,6 +60,7 @@ export class RealtimeClient extends EventTarget {
     this.socket.on("combat:defeated", (event) => this.dispatch("defeated", event));
     this.socket.on("inventory:updated", (payload: { entries: InventoryEntry[] }) => this.dispatch("inventory", payload.entries));
     this.socket.on("quest:updated", (payload: QuestProgressState[]) => this.dispatch("quests", payload));
+    this.socket.on("coop:sync-state", (payload: CoopSyncState) => this.dispatch("coop-sync", payload));
     this.socket.on("chat:message", (message) => this.dispatch("chat", message));
     this.socket.on("player:death-confirmed", (payload) => this.dispatch("death", payload));
     return this.socket;
