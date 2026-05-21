@@ -1,6 +1,6 @@
 {
   "name": "@nulldistrict/game-data",
-  "version": "0.1.0-beta.5",
+  "version": "0.1.0-beta.6",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
@@ -10,7 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@nulldistrict/shared": "0.1.0-beta.5"
+    "@nulldistrict/shared": "0.1.0-beta.6"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
