@@ -39,24 +39,13 @@ export const questDefinitions: QuestDefinition[] = [
   },
   {
     id: "collect-signal-fragments",
-    title: "Collect 3 Signal Fragments",
+    title: "Recover 3 Evidence Fragments",
     chapter: "The First Signal",
-    description: "Fragments record the district's signal scars.",
-    objective: "Collect signal fragments from the street ruins.",
+    description: "Fragments record the district's signal scars. They are evidence, not crafting filler.",
+    objective: "Recover 3 signal evidence fragments from the street ruins.",
     target: 3,
     rewardXp: 110,
     rewardSoftCurrency: 35,
-    startsUnlocked: true
-  },
-  {
-    id: "defeat-corrupted-scout",
-    title: "Defeat the Corrupted Scout",
-    chapter: "The First Signal",
-    description: "A patrol unit has learned to imitate living movement.",
-    objective: "Defeat a Corrupted Scout.",
-    target: 1,
-    rewardXp: 150,
-    rewardSoftCurrency: 55,
     startsUnlocked: true
   },
   {
@@ -68,6 +57,28 @@ export const questDefinitions: QuestDefinition[] = [
     target: 1,
     rewardXp: 90,
     rewardSoftCurrency: 30,
+    startsUnlocked: true
+  },
+  {
+    id: "extract-first-signal",
+    title: "Extract the First Signal",
+    chapter: "The First Signal",
+    description: "A case only matters if the team brings proof back to Signal Haven.",
+    objective: "Return to Signal Haven with evidence, terminal data and the Relay Core.",
+    target: 1,
+    rewardXp: 220,
+    rewardSoftCurrency: 90,
+    startsUnlocked: true
+  },
+  {
+    id: "defeat-corrupted-scout",
+    title: "Contain a Corrupted Scout",
+    chapter: "The First Signal",
+    description: "A patrol unit has learned to imitate living movement. Containment is optional field safety, not the case objective.",
+    objective: "Stun or defeat a Corrupted Scout if your route is blocked.",
+    target: 1,
+    rewardXp: 40,
+    rewardSoftCurrency: 0,
     startsUnlocked: true
   }
 ];

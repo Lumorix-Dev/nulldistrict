@@ -13,6 +13,7 @@ import { characterRoutes } from "./routes/characters.js";
 import { inventoryRoutes } from "./routes/inventory.js";
 import { puzzleRoutes } from "./routes/puzzles.js";
 import { questRoutes } from "./routes/quests.js";
+import { runRoutes } from "./routes/runs.js";
 import { shopRoutes, stripeWebhookRoute } from "./routes/shop.js";
 import { statusRoutes } from "./routes/status.js";
 import { errorHandler } from "./utils/http.js";
@@ -61,6 +62,7 @@ export function createApp(options: AppOptions) {
   app.use("/api/inventory", inventoryRoutes(options.prisma));
   app.use("/api/puzzles", puzzleRoutes(options.prisma));
   app.use("/api/quests", questRoutes(options.prisma));
+  app.use("/api/runs", runRoutes(options.prisma));
   app.use("/api/shop", shopRoutes(options.prisma));
   app.use("/api/admin", adminRoutes(options.prisma));
 

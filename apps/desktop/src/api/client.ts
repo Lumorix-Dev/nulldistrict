@@ -7,6 +7,7 @@ import type {
   PublicUser,
   PuzzleSolveResponse,
   QuestProgressState,
+  RunExtractionResponse,
   ServerStatus,
   ShopProduct
 } from "@nulldistrict/shared";
@@ -71,6 +72,12 @@ export const api = {
       method: "POST",
       token,
       body: JSON.stringify(payload)
+    }),
+  extractRun: (token: string) =>
+    request<RunExtractionResponse>("/api/runs/extract", {
+      method: "POST",
+      token,
+      body: JSON.stringify({})
     }),
   quests: (token: string) =>
     request<{ quests: QuestProgressState[] }>("/api/quests", { token }),

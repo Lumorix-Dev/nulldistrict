@@ -423,6 +423,15 @@ export class BaseSideViewScene extends Phaser.Scene {
       return;
     }
 
+    if (nearest.def.action === "open-shop") {
+      gameBus.emit("shop:open", undefined);
+      return;
+    }
+    if (nearest.def.action === "extract-case") {
+      gameBus.emit("run:extract", undefined);
+      return;
+    }
+
     if (nearest.def.puzzleId) {
       const puzzle = getPuzzleDefinition(nearest.def.puzzleId);
       if (puzzle && this.hasQuestComplete(puzzle.questId)) {

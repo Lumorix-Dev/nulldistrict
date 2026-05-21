@@ -19,6 +19,7 @@ export const QUEST_IDS = [
   "enter-null-district",
   "restore-first-relay",
   "collect-signal-fragments",
+  "extract-first-signal",
   "defeat-corrupted-scout",
   "read-broken-terminal"
 ] as const;

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Reworked the core direction into a co-op mystery extraction loop: recover evidence, solve route puzzles, bring proof back to Signal Haven and bank case rewards.
+- Added `Case 001: The First Signal` data, extraction validation and server-side extraction rewards.
+- Added a Case Board HUD with squad count, objective state and extract readiness.
+- Moved the in-game shop behind Signal Haven context and reduced combat rewards so enemies act as hazards instead of the main progression path.
+- Added a flagship asset brief for pixel art, UI, audio and trailer capture.
+
 ## v0.1.0-beta.4
 
 - Shifted the beta direction toward mystery-first puzzle gameplay instead of fight-first progression.

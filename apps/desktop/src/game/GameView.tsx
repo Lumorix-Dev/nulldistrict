@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DoorOpen, MessageSquare, Package, Pause, Send, Shield, ShoppingBag, Skull, Sparkles, X } from "lucide-react";
-import type { CharacterSummary, InventoryEntry, PublicUser, QuestProgressState, ShopProduct } from "@nulldistrict/shared";
+import type { CharacterSummary, InventoryEntry, PlayerNetState, PublicUser, QuestProgressState, ShopProduct, WorldSnapshot } from "@nulldistrict/shared";
 import { getPuzzleDefinition } from "@nulldistrict/game-data";
 import { api } from "../api/client";
 import { gameBus, type HudState } from "./EventBus";
@@ -30,6 +30,7 @@ export function GameView({
   const [shopOpen, setShopOpen] = useState(false);
   const [shopProducts, setShopProducts] = useState<ShopProduct[]>([]);
   const [shopMessage, setShopMessage] = useState("");
+  const [extracting, setExtracting] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatLines, setChatLines] = useState<{ username: string; message: string }[]>([]);
   const [prompt, setPrompt] = useState<{ label: string; type: string } | null>(null);
@@ -37,6 +38,7 @@ export function GameView({
   const [puzzleId, setPuzzleId] = useState<string | null>(null);
   const [puzzleSequence, setPuzzleSequence] = useState<string[]>([]);
   const [puzzleError, setPuzzleError] = useState("");
+  const [squadCount, setSquadCount] = useState(1);
 
   const realtime = useMemo(() => new RealtimeClient(), []);
   const tokenRef = useRef(token);
@@ -101,6 +103,9 @@ export function GameView({
     });
     const offCombatNotice = gameBus.on("combat:notice", (payload) => pushNotice(payload.title, payload.body));
     const offPrompt = gameBus.on("interact:prompt", setPrompt);
+    const offExtract = gameBus.on("run:extract", () => {
+      void extractCase();
+    });
     const offPuzzle = gameBus.on("puzzle:open", ({ puzzleId: nextPuzzleId }) => {
       setPuzzleId(nextPuzzleId);
       setPuzzleSequence([]);
@@ -110,6 +115,16 @@ export function GameView({
       setShopOpen(true);
       void api.shopProducts().then((response) => setShopProducts(response.products));
     });
+    const onSnapshot = (event: Event) => {
+      const snapshot = (event as CustomEvent<WorldSnapshot>).detail;
+      setSquadCount(Math.max(1, snapshot.players.length));
+    };
+    const onPlayers = (event: Event) => {
+      const players = (event as CustomEvent<PlayerNetState[]>).detail;
+      setSquadCount(Math.max(1, players.length));
+    };
+    realtime.addEventListener("snapshot", onSnapshot);
+    realtime.addEventListener("players", onPlayers);
 
     return () => {
       offHud();
@@ -122,8 +137,11 @@ export function GameView({
       offChat();
       offCombatNotice();
       offPrompt();
+      offExtract();
       offPuzzle();
       offShop();
+      realtime.removeEventListener("snapshot", onSnapshot);
+      realtime.removeEventListener("players", onPlayers);
       realtime.disconnect();
       game.destroy(true);
     };
@@ -150,6 +168,31 @@ export function GameView({
       setShopMessage("Purchase verified on server.");
     } catch (err) {
       setShopMessage(err instanceof Error ? err.message : "Purchase failed.");
+    }
+  }
+
+  async function extractCase() {
+    if (extracting) return;
+    setExtracting(true);
+    try {
+      const response = await api.extractRun(tokenRef.current);
+      setQuests(response.quests);
+      setInventory(response.inventory);
+      gameBus.emit("quests:update", { quests: response.quests });
+      gameBus.emit("inventory:update", { inventory: response.inventory });
+      pushNotice("Case extracted", `${response.caseTitle} rank ${response.rank}. +${response.rewards.xp} XP / +${response.rewards.softCurrency} credits`);
+      setDialogue({
+        speaker: "Signal Haven Extraction",
+        lines: [
+          response.message,
+          `Recovered evidence: ${response.recoveredEvidence}. Case rank: ${response.rank}.`,
+          response.rewards.itemName ? `${response.rewards.itemName} archived in your inventory.` : "Proof already archived."
+        ]
+      });
+    } catch (err) {
+      pushNotice("Extraction blocked", err instanceof Error ? err.message : "Case extraction failed.");
+    } finally {
+      setExtracting(false);
     }
   }
 
@@ -202,6 +245,13 @@ export function GameView({
   }
 
   const activeQuest = quests.find((quest) => !quest.completed) ?? quests[0];
+  const questById = new Map(quests.map((quest) => [quest.questId, quest]));
+  const evidenceQuest = questById.get("collect-signal-fragments");
+  const caseExtracted = questById.get("extract-first-signal")?.completed ?? false;
+  const caseReady =
+    (questById.get("restore-first-relay")?.completed ?? false) &&
+    (questById.get("read-broken-terminal")?.completed ?? false) &&
+    (evidenceQuest?.completed ?? false);
 
   return (
     <main className="game-shell">
@@ -227,11 +277,24 @@ export function GameView({
         </div>
       </aside>
 
-      <div className="combat-strip">
+      <aside className="case-board">
+        <span>CASE 001</span>
+        <strong>The First Signal</strong>
+        <div>
+          <i className={(evidenceQuest?.current ?? 0) >= 3 ? "done" : ""}>Evidence {(evidenceQuest?.current ?? 0)}/3</i>
+          <i className={questById.get("restore-first-relay")?.completed ? "done" : ""}>Relay</i>
+          <i className={questById.get("read-broken-terminal")?.completed ? "done" : ""}>Terminal</i>
+          <i className={caseExtracted ? "done" : caseReady ? "ready" : ""}>Extract</i>
+        </div>
+        <small>{squadCount} operator{squadCount === 1 ? "" : "s"} in instance</small>
+      </aside>
+
+      <div className="field-tools">
+        <strong>Field Tools</strong>
         <span className={hud?.meleeReady ? "ready" : ""}>J Stun</span>
         <span className={hud?.abilityReady ? "ready" : ""}>K Signal Pulse</span>
         <span>Shift Dash</span>
-        {prompt ? <strong>F Inspect {prompt.label}</strong> : null}
+        {prompt ? <em>F Inspect {prompt.label}</em> : null}
       </div>
 
       <div className="notice-stack">
@@ -255,7 +318,12 @@ export function GameView({
       <nav className="game-actions">
         <button title="Inventory" onClick={() => setInventoryOpen(true)}><Package /></button>
         <button title="Chat" onClick={() => setChatOpen((open) => !open)}><MessageSquare /></button>
-        <button title="Shop" onClick={() => gameBus.emit("shop:open", undefined)}><ShoppingBag /></button>
+        {hud?.areaId === "signal-haven" ? (
+          <button className={caseReady && !caseExtracted ? "extract-ready" : ""} title="Extract Case" onClick={() => void extractCase()}><DoorOpen /></button>
+        ) : null}
+        {hud?.areaId === "signal-haven" ? (
+          <button title="Null Market" onClick={() => gameBus.emit("shop:open", undefined)}><ShoppingBag /></button>
+        ) : null}
       </nav>
 
       {chatOpen ? (

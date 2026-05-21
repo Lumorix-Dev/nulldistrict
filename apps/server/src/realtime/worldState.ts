@@ -187,13 +187,8 @@ export class WorldState {
     };
 
     if (enemy.hp === 0) {
-      const xpReward = enemy.kind === "signal-wraith" ? 45 : 30;
-      const softReward = enemy.kind === "signal-wraith" ? 18 : 12;
+      const xpReward = enemy.kind === "signal-wraith" ? 12 : 8;
       await this.prisma.$transaction(async (tx) => {
-        await tx.user.update({
-          where: { id: attacker.userId },
-          data: { softCurrency: { increment: softReward } }
-        });
         await tx.playerStats.upsert({
           where: { userId: attacker.userId },
           create: { userId: attacker.userId, enemiesDefeated: 1, totalXp: xpReward },
@@ -217,8 +212,7 @@ export class WorldState {
         }
       });
 
-      const rewardItem = enemy.kind === "signal-wraith" ? "med_patch" : "signal_fragment";
-      const rewards = await grantItem(this.prisma, attacker.userId, rewardItem, 1);
+      const rewards = enemy.kind === "signal-wraith" ? await grantItem(this.prisma, attacker.userId, "med_patch", 1) : [];
       if (enemy.kind === "corrupted-scout") {
         await advanceQuest(this.prisma, attacker.userId, "defeat-corrupted-scout");
       }

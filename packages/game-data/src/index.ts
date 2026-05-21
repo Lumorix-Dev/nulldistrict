@@ -1,4 +1,5 @@
 export * from "./cosmetics.js";
+export * from "./cases.js";
 export * from "./items.js";
 export * from "./maps.js";
 export * from "./progression.js";

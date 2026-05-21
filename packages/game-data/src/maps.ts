@@ -18,6 +18,7 @@ export interface InteractableDef {
   itemId?: string;
   questId?: string;
   puzzleId?: string;
+  action?: "open-shop" | "extract-case";
 }
 
 export interface EnemySpawnDef {
@@ -75,6 +76,18 @@ export const areaDefinitions: AreaDefinition[] = [
         ]
       },
       {
+        id: "case-extraction-gate",
+        type: "terminal",
+        x: 390,
+        y: 588,
+        label: "Extraction Gate",
+        action: "extract-case",
+        text: [
+          "CASE EXTRACTION: waiting for proof.",
+          "Return with fragments, decoded terminal data and the Relay Core."
+        ]
+      },
+      {
         id: "haven-terminal",
         type: "terminal",
         x: 520,
@@ -84,6 +97,18 @@ export const areaDefinitions: AreaDefinition[] = [
         text: [
           "LUMORIX RELAY NET: offline.",
           "Unknown packet repeats: The district remembers you."
+        ]
+      },
+      {
+        id: "null-market-terminal",
+        type: "terminal",
+        x: 680,
+        y: 428,
+        label: "Null Market",
+        action: "open-shop",
+        text: [
+          "Supporter cosmetics only.",
+          "No premium item can make your tools stronger."
         ]
       },
       {
@@ -142,7 +167,7 @@ export const areaDefinitions: AreaDefinition[] = [
         type: "pickup",
         x: 620,
         y: 566,
-        label: "Signal Fragment",
+        label: "Evidence Fragment",
         itemId: "signal_fragment",
         questId: "collect-signal-fragments"
       },
@@ -151,7 +176,7 @@ export const areaDefinitions: AreaDefinition[] = [
         type: "pickup",
         x: 1500,
         y: 586,
-        label: "Signal Fragment",
+        label: "Evidence Fragment",
         itemId: "signal_fragment",
         questId: "collect-signal-fragments"
       },
@@ -168,7 +193,7 @@ export const areaDefinitions: AreaDefinition[] = [
         type: "pickup",
         x: 2060,
         y: 516,
-        label: "Signal Fragment",
+        label: "Evidence Fragment",
         itemId: "signal_fragment",
         questId: "collect-signal-fragments"
       },

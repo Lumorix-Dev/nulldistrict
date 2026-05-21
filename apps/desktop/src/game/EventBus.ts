@@ -25,6 +25,7 @@ export type GameEventMap = {
   "interact:prompt": { label: string; type: string } | null;
   "player:heal": { amount: number };
   "puzzle:open": { puzzleId: string };
+  "run:extract": undefined;
   "area:change": { areaId: AreaId };
   "shop:open": undefined;
 };

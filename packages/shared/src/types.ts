@@ -99,6 +99,21 @@ export interface PuzzleSolveResponse {
   inventory: InventoryEntry[];
 }
 
+export interface RunExtractionResponse {
+  extracted: true;
+  caseTitle: string;
+  rank: "C" | "B" | "A" | "S";
+  recoveredEvidence: number;
+  message: string;
+  rewards: {
+    xp: number;
+    softCurrency: number;
+    itemName?: string;
+  };
+  quests: QuestProgressState[];
+  inventory: InventoryEntry[];
+}
+
 export interface ServerStatus {
   online: boolean;
   message: string;

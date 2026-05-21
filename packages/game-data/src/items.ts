@@ -30,6 +30,15 @@ export const itemDefinitions: ItemDefinition[] = [
     stackLimit: 1
   },
   {
+    id: "first_signal_casefile",
+    name: "First Signal Casefile",
+    description: "A sealed investigation file proving the first Null District route can be entered, decoded and survived.",
+    type: "lore",
+    rarity: "epic",
+    iconKey: "icon-casefile",
+    stackLimit: 1
+  },
+  {
     id: "relay_core",
     name: "Relay Core",
     description: "Quest component used to restore the First Relay.",
