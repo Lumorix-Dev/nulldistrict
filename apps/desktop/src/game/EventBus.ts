@@ -28,6 +28,27 @@ export type GameEventMap = {
   "run:extract": undefined;
   "area:change": { areaId: AreaId };
   "shop:open": undefined;
+  // ── Creative Mode ──────────────────────────────────────────────────────────
+  /** A tile was placed or erased (own or remote). */
+  "voidcraft:tile-placed": { x: number; y: number; layer: 0 | 1 | 2; tileId: string; playerId: string };
+  /** Notifies HUD that selected block changed (from game → HUD). */
+  "voidcraft:selected-block-change": { blockId: string };
+  /** Notifies HUD that the active layer changed. */
+  "voidcraft:layer-change": { layer: 0 | 1 | 2 };
+  /** Notifies HUD that the active tool changed. */
+  "voidcraft:tool-change": { tool: string };
+  /** World was saved to a slot. */
+  "voidcraft:world-saved": { slot: number };
+  /** World was loaded from a slot. */
+  "voidcraft:world-loaded": { slot: number };
+  /** HUD → game: user selected a block from the palette. */
+  "voidcraft:select-block": { blockId: string };
+  /** HUD → game: user selected a tool from the palette. */
+  "voidcraft:select-tool": { tool: string };
+  /** HUD → game: user selected a layer from the palette. */
+  "voidcraft:select-layer": { layer: 0 | 1 | 2 };
+  /** HUD → game: user clicked minimap to jump camera. */
+  "voidcraft:minimap-click": { worldX: number; worldY: number };
 };
 
 type Handler<T> = (payload: T) => void;
