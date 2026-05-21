@@ -67,7 +67,18 @@ export function shopRoutes(prisma: PrismaClient) {
         include: { product: true },
         orderBy: { createdAt: "desc" }
       });
-      res.json({ purchases });
+      res.json({
+        purchases: purchases.map((purchase) => ({
+          id: purchase.id,
+          productTitle: purchase.product.title,
+          productType: purchase.product.productType,
+          provider: purchase.provider,
+          status: purchase.status,
+          amountCents: purchase.amountCents,
+          premiumGranted: purchase.premiumGranted,
+          createdAt: purchase.createdAt.toISOString()
+        }))
+      });
     })
   );
 
@@ -128,6 +139,7 @@ export function shopRoutes(prisma: PrismaClient) {
     "/stripe/create-checkout-session",
     validateBody(testPurchaseSchema),
     asyncHandler(async (req, res) => {
+      const auth = (req as AuthenticatedRequest).auth;
       if (!env.PREMIUM_PURCHASES_ENABLED || !stripe) {
         throw new HttpError(503, "Real-money purchases are not enabled for this beta.", "PAYMENTS_DISABLED");
       }
@@ -150,12 +162,27 @@ export function shopRoutes(prisma: PrismaClient) {
             }
           }
         ],
-        success_url: "https://lumorix.example/success",
-        cancel_url: "https://lumorix.example/cancel",
-        metadata: { productId: product.id }
+        success_url: env.PAYMENT_SUCCESS_URL,
+        cancel_url: env.PAYMENT_CANCEL_URL,
+        metadata: { productId: product.id, userId: auth.userId }
+      });
+      if (!session.url) {
+        throw new HttpError(502, "Stripe did not return a checkout URL.", "CHECKOUT_URL_MISSING");
+      }
+
+      const purchase = await prisma.purchase.create({
+        data: {
+          userId: auth.userId,
+          productId: product.id,
+          provider: "stripe",
+          providerSessionId: session.id,
+          status: "pending",
+          amountCents: product.priceCents,
+          premiumGranted: product.grantsPremium ?? 0
+        }
       });
 
-      res.json({ url: session.url });
+      res.json({ url: session.url, purchaseId: purchase.id });
     })
   );
 
@@ -204,7 +231,44 @@ export function stripeWebhookRoute(prisma: PrismaClient) {
       const productId = session.metadata?.productId;
       const userId = session.metadata?.userId;
       if (productId && userId) {
+        let shouldGrant = true;
+        await prisma.$transaction(async (tx) => {
+          const existing = await tx.purchase.findFirst({
+            where: { provider: "stripe", providerSessionId: session.id }
+          });
+          if (existing?.status === "paid") {
+            shouldGrant = false;
+            return;
+          }
+
+          const product = await tx.shopProduct.findUniqueOrThrow({ where: { id: productId } });
+          await tx.purchase.upsert({
+            where: { id: existing?.id ?? `stripe_${session.id}` },
+            create: {
+              id: `stripe_${session.id}`,
+              userId,
+              productId,
+              provider: "stripe",
+              providerSessionId: session.id,
+              status: "paid",
+              amountCents: product.priceCents,
+              premiumGranted: product.grantsPremium ?? 0
+            },
+            update: { status: "paid" }
+          });
+        });
+        if (!shouldGrant) {
+          return res.json({ received: true });
+        }
         await grantProduct(prisma, userId, productId);
+        await prisma.auditLog.create({
+          data: {
+            actorId: userId,
+            action: "SHOP_STRIPE_PURCHASE",
+            targetId: productId,
+            metadata: { sessionId: session.id }
+          }
+        });
       }
     }
 

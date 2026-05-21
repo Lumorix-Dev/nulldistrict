@@ -58,7 +58,7 @@ export function CharacterScreen({
                 onClick={() => onSelect(character)}
               >
                 <span>{character.name}</span>
-                <small>{character.className} - Lv {character.level}</small>
+                <small>{character.className} - Lv {character.level} - {character.xp} XP - {character.skillPoints} SP</small>
               </button>
             ))
           )}

@@ -69,17 +69,23 @@ export async function listQuestProgress(prisma: PrismaClient, userId: string): P
   const progress = await prisma.questProgress.findMany({
     where: { userId },
     include: { quest: true },
-    orderBy: { questId: "asc" }
   });
 
-  return progress.map((entry) => ({
-    questId: entry.questId as QuestId,
-    title: entry.quest.title,
-    current: entry.current,
-    target: entry.quest.target,
-    completed: entry.completed,
-    claimedAt: entry.claimedAt?.toISOString() ?? null
-  }));
+  const order = new Map(questDefinitions.map((quest, index) => [quest.id, index]));
+  return progress
+    .sort((left, right) => (order.get(left.questId as QuestId) ?? 999) - (order.get(right.questId as QuestId) ?? 999))
+    .map((entry) => ({
+      questId: entry.questId as QuestId,
+      title: entry.quest.title,
+      chapter: entry.quest.chapter,
+      objective: entry.quest.objective,
+      current: entry.current,
+      target: entry.quest.target,
+      rewardXp: entry.quest.rewardXp,
+      rewardSoftCurrency: entry.quest.rewardSoftCurrency,
+      completed: entry.completed,
+      claimedAt: entry.claimedAt?.toISOString() ?? null
+    }));
 }
 
 export async function advanceQuest(

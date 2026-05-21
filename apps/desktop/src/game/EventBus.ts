@@ -5,6 +5,8 @@ export interface HudState {
   maxHp: number;
   energy: number;
   maxEnergy: number;
+  abilityReady: boolean;
+  meleeReady: boolean;
   areaId: AreaId;
   areaTitle: string;
   softCurrency: number;
@@ -19,6 +21,9 @@ export type GameEventMap = {
   "pause:toggle": undefined;
   "death:show": { lostSoftCurrency: number };
   "chat:message": { username: string; message: string };
+  "combat:notice": { title: string; body: string };
+  "interact:prompt": { label: string; type: string } | null;
+  "player:heal": { amount: number };
   "area:change": { areaId: AreaId };
   "shop:open": undefined;
 };

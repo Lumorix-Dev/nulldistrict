@@ -53,8 +53,12 @@ export interface InventoryEntry {
 export interface QuestProgressState {
   questId: QuestId;
   title: string;
+  chapter: string;
+  objective: string;
   current: number;
   target: number;
+  rewardXp: number;
+  rewardSoftCurrency: number;
   completed: boolean;
   claimedAt?: string | null;
 }
@@ -70,6 +74,22 @@ export interface ShopProduct {
   grantsPremium?: number;
   cosmeticId?: string;
   enabled: boolean;
+}
+
+export interface PurchaseHistoryEntry {
+  id: string;
+  productTitle: string;
+  productType: ShopProductType;
+  provider: string;
+  status: string;
+  amountCents: number;
+  premiumGranted: number;
+  createdAt: string;
+}
+
+export interface CheckoutSessionResponse {
+  url: string;
+  purchaseId: string;
 }
 
 export interface ServerStatus {

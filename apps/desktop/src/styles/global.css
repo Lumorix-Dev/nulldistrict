@@ -227,6 +227,13 @@ input:focus {
   color: #ffb0bf;
 }
 
+.secondary-button.compact {
+  min-height: 32px;
+  margin-top: 10px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
 .text-button {
   background: transparent;
   color: var(--muted);
@@ -437,6 +444,35 @@ input:focus {
   font-weight: 800;
 }
 
+.purchase-history {
+  display: grid;
+  gap: 9px;
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(3, 8, 13, 0.42);
+  padding: 14px;
+}
+
+.purchase-history h3 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+}
+
+.purchase-history > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(139, 211, 255, 0.1);
+  padding-top: 8px;
+}
+
+.purchase-history span {
+  color: var(--muted);
+}
+
 .status-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -565,6 +601,72 @@ input:focus {
 }
 
 .quest-tracker span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.combat-strip {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  z-index: 10;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  max-width: min(680px, calc(100vw - 420px));
+  overflow: hidden;
+}
+
+.combat-strip span,
+.combat-strip strong {
+  white-space: nowrap;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(3, 8, 13, 0.78);
+  padding: 9px 11px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.combat-strip span.ready,
+.combat-strip strong {
+  border-color: rgba(69, 245, 200, 0.42);
+  color: var(--green);
+}
+
+.notice-stack {
+  position: absolute;
+  right: 18px;
+  top: 146px;
+  z-index: 22;
+  width: min(360px, calc(100vw - 36px));
+  display: grid;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.game-notice {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(3, 8, 13, 0.88);
+  padding: 10px;
+  box-shadow: var(--shadow);
+}
+
+.game-notice svg {
+  color: var(--cyan);
+}
+
+.game-notice div {
+  display: grid;
+  gap: 3px;
+}
+
+.game-notice span {
   color: var(--muted);
   font-size: 12px;
 }
@@ -722,5 +824,13 @@ input:focus {
     grid-column: 1 / -1;
     grid-template-columns: 1fr;
     order: 3;
+  }
+
+  .combat-strip {
+    left: 18px;
+    right: 18px;
+    bottom: 76px;
+    transform: none;
+    max-width: none;
   }
 }

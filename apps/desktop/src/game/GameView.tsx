@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DoorOpen, MessageSquare, Package, Pause, Send, Shield, ShoppingBag, Skull, X } from "lucide-react";
+import { DoorOpen, MessageSquare, Package, Pause, Send, Shield, ShoppingBag, Skull, Sparkles, X } from "lucide-react";
 import type { CharacterSummary, InventoryEntry, PublicUser, QuestProgressState, ShopProduct } from "@nulldistrict/shared";
 import { api } from "../api/client";
 import { gameBus, type HudState } from "./EventBus";
@@ -31,9 +31,12 @@ export function GameView({
   const [shopMessage, setShopMessage] = useState("");
   const [chatInput, setChatInput] = useState("");
   const [chatLines, setChatLines] = useState<{ username: string; message: string }[]>([]);
+  const [prompt, setPrompt] = useState<{ label: string; type: string } | null>(null);
+  const [notices, setNotices] = useState<{ id: string; title: string; body: string }[]>([]);
 
   const realtime = useMemo(() => new RealtimeClient(), []);
   const tokenRef = useRef(token);
+  const completedQuestRef = useRef(new Set<string>());
 
   useEffect(() => {
     tokenRef.current = token;
@@ -51,6 +54,7 @@ export function GameView({
         advanceQuest: async (payload: { questId: string; amount?: number; storyFlag?: { key: string; value: boolean } }) => {
           const response = await api.advanceQuest(tokenRef.current, payload);
           setQuests(response.quests);
+          gameBus.emit("quests:update", { quests: response.quests });
         },
         loadInventory: async () => {
           const response = await api.inventory(tokenRef.current);
@@ -72,7 +76,15 @@ export function GameView({
     const offHud = gameBus.on("hud:update", setHud);
     const offInventory = gameBus.on("inventory:update", (payload) => setInventory(payload.inventory));
     const offInventoryToggle = gameBus.on("inventory:toggle", () => setInventoryOpen((open) => !open));
-    const offQuests = gameBus.on("quests:update", (payload) => setQuests(payload.quests));
+    const offQuests = gameBus.on("quests:update", (payload) => {
+      setQuests(payload.quests);
+      for (const quest of payload.quests) {
+        if (quest.completed && !completedQuestRef.current.has(quest.questId)) {
+          completedQuestRef.current.add(quest.questId);
+          pushNotice("Quest complete", `${quest.title} +${quest.rewardXp} XP / +${quest.rewardSoftCurrency} credits`);
+        }
+      }
+    });
     const offPause = gameBus.on("pause:toggle", () => setPauseOpen((open) => !open));
     const offDialogue = gameBus.on("dialogue:open", setDialogue);
     const offDeath = gameBus.on("death:show", (payload) => {
@@ -82,6 +94,8 @@ export function GameView({
     const offChat = gameBus.on("chat:message", (payload) => {
       setChatLines((lines) => [...lines.slice(-5), payload]);
     });
+    const offCombatNotice = gameBus.on("combat:notice", (payload) => pushNotice(payload.title, payload.body));
+    const offPrompt = gameBus.on("interact:prompt", setPrompt);
     const offShop = gameBus.on("shop:open", () => {
       setShopOpen(true);
       void api.shopProducts().then((response) => setShopProducts(response.products));
@@ -96,11 +110,21 @@ export function GameView({
       offDialogue();
       offDeath();
       offChat();
+      offCombatNotice();
+      offPrompt();
       offShop();
       realtime.disconnect();
       game.destroy(true);
     };
   }, [user.id, user.username, character, realtime]);
+
+  function pushNotice(title: string, body: string) {
+    const id = `${Date.now()}-${Math.random()}`;
+    setNotices((current) => [...current.slice(-3), { id, title, body }]);
+    window.setTimeout(() => {
+      setNotices((current) => current.filter((notice) => notice.id !== id));
+    }, 3200);
+  }
 
   function sendChat() {
     if (!chatInput.trim() || !hud) return;
@@ -115,6 +139,21 @@ export function GameView({
       setShopMessage("Purchase verified on server.");
     } catch (err) {
       setShopMessage(err instanceof Error ? err.message : "Purchase failed.");
+    }
+  }
+
+  async function useInventoryItem(item: InventoryEntry) {
+    if (item.itemId !== "med_patch") {
+      pushNotice("Inventory", "This item cannot be used yet.");
+      return;
+    }
+    try {
+      const response = await api.useItem(tokenRef.current, item.itemId);
+      setInventory(response.inventory);
+      gameBus.emit("player:heal", { amount: response.effect.heal });
+      pushNotice("Med Patch used", `Recovered ${response.effect.heal} HP.`);
+    } catch (err) {
+      pushNotice("Inventory error", err instanceof Error ? err.message : "Could not use item.");
     }
   }
 
@@ -140,9 +179,28 @@ export function GameView({
         <Shield size={16} />
         <div>
           <strong>{activeQuest?.title ?? "No active quest"}</strong>
-          <span>{activeQuest ? `${activeQuest.current}/${activeQuest.target}` : "Explore the district"}</span>
+          <span>{activeQuest ? `${activeQuest.objective} ${activeQuest.current}/${activeQuest.target}` : "Explore the district"}</span>
         </div>
       </aside>
+
+      <div className="combat-strip">
+        <span className={hud?.meleeReady ? "ready" : ""}>J Melee</span>
+        <span className={hud?.abilityReady ? "ready" : ""}>K Ability</span>
+        <span>Shift Dash</span>
+        {prompt ? <strong>F {prompt.label}</strong> : null}
+      </div>
+
+      <div className="notice-stack">
+        {notices.map((notice) => (
+          <div className="game-notice" key={notice.id}>
+            <Sparkles size={15} />
+            <div>
+              <strong>{notice.title}</strong>
+              <span>{notice.body}</span>
+            </div>
+          </div>
+        ))}
+      </div>
 
       <div className="chat-stack">
         {chatLines.map((line, index) => (
@@ -171,6 +229,9 @@ export function GameView({
                 <strong>{item.name}</strong>
                 <span>{item.type} - x{item.quantity}</span>
                 <p>{item.description}</p>
+                {item.itemId === "med_patch" ? (
+                  <button className="secondary-button compact" onClick={() => void useInventoryItem(item)}>Use</button>
+                ) : null}
               </div>
             )) : <div className="notice-line">No items yet. Fragments and loot appear here after pickups.</div>}
           </div>

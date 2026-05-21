@@ -86,6 +86,14 @@ export const areaDefinitions: AreaDefinition[] = [
         ]
       },
       {
+        id: "tutorial-med-patch",
+        type: "pickup",
+        x: 820,
+        y: 426,
+        label: "Med Patch",
+        itemId: "med_patch"
+      },
+      {
         id: "to-district-entrance",
         type: "transition",
         x: 2180,
@@ -146,6 +154,14 @@ export const areaDefinitions: AreaDefinition[] = [
         questId: "collect-signal-fragments"
       },
       {
+        id: "street-med-patch",
+        type: "pickup",
+        x: 1040,
+        y: 496,
+        label: "Med Patch",
+        itemId: "med_patch"
+      },
+      {
         id: "fragment-c",
         type: "pickup",
         x: 2060,
@@ -180,6 +196,15 @@ export const areaDefinitions: AreaDefinition[] = [
         patrolMin: 1520,
         patrolMax: 2060,
         hp: 90
+      },
+      {
+        id: "corrupted-scout-2",
+        kind: "corrupted-scout",
+        x: 2440,
+        y: 690,
+        patrolMin: 2200,
+        patrolMax: 2780,
+        hp: 110
       }
     ]
   },
@@ -222,6 +247,14 @@ export const areaDefinitions: AreaDefinition[] = [
         itemId: "relay_core"
       },
       {
+        id: "sector-med-patch",
+        type: "pickup",
+        x: 1450,
+        y: 636,
+        label: "Med Patch",
+        itemId: "med_patch"
+      },
+      {
         id: "to-entrance",
         type: "transition",
         x: 80,
@@ -247,6 +280,15 @@ export const areaDefinitions: AreaDefinition[] = [
         patrolMin: 1320,
         patrolMax: 1900,
         hp: 120
+      },
+      {
+        id: "wraith-b",
+        kind: "signal-wraith",
+        x: 2340,
+        y: 560,
+        patrolMin: 2060,
+        patrolMax: 2580,
+        hp: 145
       }
     ]
   },

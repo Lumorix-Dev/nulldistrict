@@ -21,6 +21,12 @@ interface InteractableRuntime {
   used: boolean;
 }
 
+interface EnemyHud {
+  background: Phaser.GameObjects.Rectangle;
+  fill: Phaser.GameObjects.Rectangle;
+  label: Phaser.GameObjects.Text;
+}
+
 export class BaseSideViewScene extends Phaser.Scene {
   protected readonly areaId: AreaId;
   protected area!: AreaDefinition;
@@ -30,7 +36,11 @@ export class BaseSideViewScene extends Phaser.Scene {
   protected inputBindings = new InputBindings();
   protected interactables: InteractableRuntime[] = [];
   protected enemies = new Map<string, PlayerSprite>();
+  protected enemyHud = new Map<string, EnemyHud>();
+  protected enemyMaxHp = new Map<string, number>();
+  protected enemyShotCooldowns = new Map<string, number>();
   protected remotePlayers = new Map<string, Phaser.GameObjects.Container>();
+  protected questProgress = new Map<QuestId, QuestProgressState>();
   protected facing: "left" | "right" = "right";
   protected hp = 100;
   protected energy = 100;
@@ -73,8 +83,9 @@ export class BaseSideViewScene extends Phaser.Scene {
     if (input.inventoryJustDown) gameBus.emit("inventory:toggle", undefined);
     if (input.pauseJustDown) gameBus.emit("pause:toggle", undefined);
     if (input.interactJustDown) this.tryInteract();
+    this.updateInteractPrompt();
     this.updateMovement(time, input);
-    this.updateEnemyContact(delta);
+    this.updateEnemyThreats(time, delta);
     this.syncNetwork(time);
     gameBus.emit("hud:update", this.hudState());
   }
@@ -151,7 +162,9 @@ export class BaseSideViewScene extends Phaser.Scene {
       gameBus.emit("inventory:update", { inventory: (event as CustomEvent<InventoryEntry[]>).detail });
     };
     const onQuests = (event: Event) => {
-      gameBus.emit("quests:update", { quests: (event as CustomEvent<QuestProgressState[]>).detail });
+      const quests = (event as CustomEvent<QuestProgressState[]>).detail;
+      this.questProgress = new Map(quests.map((quest) => [quest.questId, quest]));
+      gameBus.emit("quests:update", { quests });
     };
     const onChat = (event: Event) => {
       const msg = (event as CustomEvent<{ username: string; message: string }>).detail;
@@ -163,6 +176,26 @@ export class BaseSideViewScene extends Phaser.Scene {
       gameBus.emit("death:show", detail);
       this.respawn();
     };
+    const onDefeated = (event: Event) => {
+      const detail = (event as CustomEvent<{ targetId: string; rewards?: InventoryEntry[] }>).detail;
+      const enemy = this.enemies.get(detail.targetId);
+      if (enemy) {
+        enemy.setTint(0x45f5c8);
+        this.tweens.add({ targets: enemy, alpha: 0.2, duration: 180, yoyo: true });
+      }
+      const reward = detail.rewards?.[0];
+      gameBus.emit("combat:notice", {
+        title: "Target neutralized",
+        body: reward ? `Recovered ${reward.name}.` : "The signal collapses for now."
+      });
+    };
+    const offHeal = gameBus.on("player:heal", ({ amount }) => {
+      this.hp = Math.min(100, this.hp + amount);
+      this.showFloatingText(this.player.x, this.player.y - 58, `+${amount}`, "#45f5c8");
+    });
+    const offQuestBus = gameBus.on("quests:update", ({ quests }) => {
+      this.questProgress = new Map(quests.map((quest) => [quest.questId, quest]));
+    });
     realtime.addEventListener("enemies", onEnemies);
     realtime.addEventListener("players", onPlayers);
     realtime.addEventListener("damage", onDamage);
@@ -170,6 +203,7 @@ export class BaseSideViewScene extends Phaser.Scene {
     realtime.addEventListener("quests", onQuests);
     realtime.addEventListener("chat", onChat);
     realtime.addEventListener("death", onDeath);
+    realtime.addEventListener("defeated", onDefeated);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       realtime.removeEventListener("enemies", onEnemies);
       realtime.removeEventListener("players", onPlayers);
@@ -178,6 +212,9 @@ export class BaseSideViewScene extends Phaser.Scene {
       realtime.removeEventListener("quests", onQuests);
       realtime.removeEventListener("chat", onChat);
       realtime.removeEventListener("death", onDeath);
+      realtime.removeEventListener("defeated", onDefeated);
+      offHeal();
+      offQuestBus();
       realtime.leave();
     });
   }
@@ -234,6 +271,7 @@ export class BaseSideViewScene extends Phaser.Scene {
     this.energy -= 30;
     this.abilityCooldownUntil = time + 720;
     const projectile = this.physics.add.sprite(this.player.x, this.player.y - 12, "projectile");
+    projectile.body.setAllowGravity(false);
     projectile.setVelocityX(this.facing === "right" ? 620 : -620);
     projectile.setDepth(30);
     this.physics.add.collider(projectile, this.platforms, () => projectile.destroy());
@@ -276,14 +314,42 @@ export class BaseSideViewScene extends Phaser.Scene {
     }
   }
 
-  protected updateEnemyContact(delta: number) {
-    for (const enemy of this.enemies.values()) {
-      if (!enemy.active || Phaser.Math.Distance.Between(this.player.x, this.player.y, enemy.x, enemy.y) > 42) continue;
-      this.hp = Math.max(0, this.hp - 0.018 * delta);
-      this.player.setTint(0xff5f7e);
-      this.time.delayedCall(80, () => this.player.clearTint());
-      if (this.hp <= 0) this.die();
+  protected updateEnemyThreats(time: number, delta: number) {
+    for (const [id, enemy] of this.enemies) {
+      if (!enemy.active) continue;
+      const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, enemy.x, enemy.y);
+      if (distance < 42) {
+        this.damagePlayer(0.022 * delta);
+      }
+      if (distance < 520 && Math.abs(this.player.y - enemy.y) < 170) {
+        this.fireEnemyShot(id, enemy, time);
+      }
     }
+  }
+
+  protected fireEnemyShot(id: string, enemy: PlayerSprite, time: number) {
+    const nextShot = this.enemyShotCooldowns.get(id) ?? 0;
+    if (time < nextShot) return;
+    this.enemyShotCooldowns.set(id, time + 1300 + Math.random() * 700);
+    const bolt = this.physics.add.sprite(enemy.x, enemy.y - 10, "enemy-projectile");
+    bolt.body.setAllowGravity(false);
+    bolt.setDepth(28);
+    bolt.setVelocityX(this.player.x >= enemy.x ? 280 : -280);
+    bolt.setVelocityY(Phaser.Math.Clamp((this.player.y - enemy.y) * 1.4, -180, 180));
+    this.physics.add.collider(bolt, this.platforms, () => bolt.destroy());
+    this.physics.add.overlap(bolt, this.player, () => {
+      bolt.destroy();
+      this.damagePlayer(11);
+    });
+    this.time.delayedCall(1600, () => bolt.destroy());
+  }
+
+  protected damagePlayer(amount: number) {
+    if (this.dead) return;
+    this.hp = Math.max(0, this.hp - amount);
+    this.player.setTint(0xff5f7e);
+    this.time.delayedCall(80, () => this.player.clearTint());
+    if (this.hp <= 0) this.die();
   }
 
   protected die() {
@@ -314,6 +380,16 @@ export class BaseSideViewScene extends Phaser.Scene {
     if (!nearest) return;
 
     if (nearest.def.type === "transition" && nearest.def.targetArea) {
+      if (nearest.def.targetArea === "underground-sector-a" && !this.hasQuestComplete("restore-first-relay")) {
+        gameBus.emit("dialogue:open", {
+          speaker: "District Seal",
+          lines: [
+            "Access denied. The First Relay is still silent.",
+            "Restore the relay before entering Underground Sector A."
+          ]
+        });
+        return;
+      }
       if (nearest.def.targetArea === "district-entrance") {
         void this.context.api.advanceQuest({ questId: "enter-null-district", amount: 1 });
       }
@@ -329,6 +405,10 @@ export class BaseSideViewScene extends Phaser.Scene {
         areaId: this.areaId,
         x: nearest.def.x,
         y: nearest.def.y
+      });
+      gameBus.emit("combat:notice", {
+        title: "Item recovered",
+        body: nearest.def.label
       });
       return;
     }
@@ -357,6 +437,19 @@ export class BaseSideViewScene extends Phaser.Scene {
     }
   }
 
+  protected hasQuestComplete(questId: QuestId) {
+    return this.questProgress.get(questId)?.completed === true;
+  }
+
+  protected updateInteractPrompt() {
+    const nearest = this.interactables
+      .filter((entry) => !entry.used || entry.def.type !== "pickup")
+      .map((entry) => ({ entry, distance: Phaser.Math.Distance.Between(this.player.x, this.player.y, entry.sprite.x, entry.sprite.y) }))
+      .filter(({ distance }) => distance < 96)
+      .sort((a, b) => a.distance - b.distance)[0]?.entry;
+    gameBus.emit("interact:prompt", nearest ? { label: nearest.def.label, type: nearest.def.type } : null);
+  }
+
   protected renderEnemies(enemies: EnemyNetState[]) {
     for (const enemyState of enemies) {
       let sprite = this.enemies.get(enemyState.id);
@@ -366,11 +459,32 @@ export class BaseSideViewScene extends Phaser.Scene {
         sprite.setDepth(18);
         this.physics.add.collider(sprite, this.platforms);
         this.enemies.set(enemyState.id, sprite);
+        this.enemyMaxHp.set(enemyState.id, enemyState.maxHp);
+        this.enemyHud.set(enemyState.id, {
+          background: this.add.rectangle(enemyState.x, enemyState.y - 42, 48, 5, 0x05070b, 0.9).setDepth(40),
+          fill: this.add.rectangle(enemyState.x - 24, enemyState.y - 42, 48, 5, 0xff5f7e, 1).setOrigin(0, 0.5).setDepth(41),
+          label: this.add.text(enemyState.x - 42, enemyState.y - 62, enemyState.kind === "signal-wraith" ? "Signal Wraith" : "Corrupted Scout", {
+            fontFamily: "monospace",
+            fontSize: "10px",
+            color: "#ffb0bf",
+            backgroundColor: "rgba(5,7,11,0.62)",
+            padding: { x: 3, y: 1 }
+          }).setDepth(41)
+        });
       }
       sprite.setPosition(enemyState.x, enemyState.y);
       sprite.setVisible(enemyState.hp > 0);
       sprite.setActive(enemyState.hp > 0);
       if (enemyState.hp > 0) sprite.setTint(enemyState.animation === "chase" ? 0xff8fa3 : 0xffffff);
+
+      const hud = this.enemyHud.get(enemyState.id);
+      if (hud) {
+        const visible = enemyState.hp > 0;
+        const percent = Phaser.Math.Clamp(enemyState.hp / enemyState.maxHp, 0, 1);
+        hud.background.setPosition(enemyState.x, enemyState.y - 42).setVisible(visible);
+        hud.fill.setPosition(enemyState.x - 24, enemyState.y - 42).setDisplaySize(48 * percent, 5).setVisible(visible);
+        hud.label.setPosition(enemyState.x - 42, enemyState.y - 62).setVisible(visible);
+      }
     }
   }
 
@@ -396,10 +510,24 @@ export class BaseSideViewScene extends Phaser.Scene {
   }
 
   protected showDamage(event: DamageEvent) {
-    const text = this.add.text(event.x, event.y, `-${event.amount}`, {
+    if (event.targetId === this.context.character.id && event.kind === "pvp") {
+      this.damagePlayer(event.amount);
+    }
+    const enemy = this.enemies.get(event.targetId);
+    if (enemy) {
+      enemy.setTint(0xf8f871);
+      this.time.delayedCall(90, () => {
+        if (enemy.active) enemy.clearTint();
+      });
+    }
+    this.showFloatingText(event.x, event.y, `-${event.amount}`, event.kind === "pvp" ? "#ff8fa3" : "#f8f871");
+  }
+
+  protected showFloatingText(x: number, y: number, label: string, color: string) {
+    const text = this.add.text(x, y, label, {
       fontFamily: "monospace",
       fontSize: "18px",
-      color: event.kind === "pvp" ? "#ff8fa3" : "#f8f871",
+      color,
       stroke: "#05070b",
       strokeThickness: 4
     }).setDepth(60);
@@ -454,11 +582,14 @@ export class BaseSideViewScene extends Phaser.Scene {
   }
 
   protected hudState() {
+    const now = this.time.now;
     return {
       hp: Math.round(this.hp),
       maxHp: 100,
       energy: Math.round(this.energy),
       maxEnergy: 100,
+      abilityReady: now >= this.abilityCooldownUntil && this.energy >= 30,
+      meleeReady: now >= this.attackCooldownUntil,
       areaId: this.areaId,
       areaTitle: this.area.title,
       softCurrency: this.softCurrency

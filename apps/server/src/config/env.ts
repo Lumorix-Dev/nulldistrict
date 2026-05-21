@@ -15,6 +15,8 @@ const envSchema = z.object({
   CLIENT_ORIGIN: z.string().default("http://localhost:1420,http://localhost:5173,tauri://localhost"),
   STRIPE_SECRET_KEY: z.string().optional().default(""),
   STRIPE_WEBHOOK_SECRET: z.string().optional().default(""),
+  PAYMENT_SUCCESS_URL: z.string().url().default("https://lumorix.example/payment-success"),
+  PAYMENT_CANCEL_URL: z.string().url().default("https://lumorix.example/payment-cancel"),
   SHOP_ENABLED: z.coerce.boolean().default(true),
   PREMIUM_PURCHASES_ENABLED: z.coerce.boolean().default(false),
   GITHUB_REPO: z.string().default("lumorix/nulldistrict"),

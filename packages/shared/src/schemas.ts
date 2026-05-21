@@ -69,6 +69,10 @@ export const pickupSchema = z.object({
   y: z.number().finite()
 });
 
+export const useItemSchema = z.object({
+  itemId: z.string().min(1).max(80)
+});
+
 export const questProgressBodySchema = z.object({
   questId: questIdSchema,
   amount: z.number().int().min(1).max(10).default(1),

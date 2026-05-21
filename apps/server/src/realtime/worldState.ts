@@ -187,13 +187,41 @@ export class WorldState {
     };
 
     if (enemy.hp === 0) {
-      await this.prisma.playerStats.upsert({
-        where: { userId: attacker.userId },
-        create: { userId: attacker.userId, enemiesDefeated: 1 },
-        update: { enemiesDefeated: { increment: 1 } }
+      const xpReward = enemy.kind === "signal-wraith" ? 45 : 30;
+      const softReward = enemy.kind === "signal-wraith" ? 18 : 12;
+      await this.prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: attacker.userId },
+          data: { softCurrency: { increment: softReward } }
+        });
+        await tx.playerStats.upsert({
+          where: { userId: attacker.userId },
+          create: { userId: attacker.userId, enemiesDefeated: 1, totalXp: xpReward },
+          update: { enemiesDefeated: { increment: 1 }, totalXp: { increment: xpReward } }
+        });
+        const character = await tx.character.findFirst({
+          where: { userId: attacker.userId, id: attacker.characterId },
+          orderBy: { updatedAt: "desc" }
+        });
+        if (character) {
+          const xp = character.xp + xpReward;
+          const nextLevel = 1 + Math.floor(xp / 300);
+          await tx.character.update({
+            where: { id: character.id },
+            data: {
+              xp,
+              level: Math.max(character.level, nextLevel),
+              skillPoints: nextLevel > character.level ? { increment: nextLevel - character.level } : undefined
+            }
+          });
+        }
       });
-      const rewards = await grantItem(this.prisma, attacker.userId, "signal_fragment", 1);
-      await advanceQuest(this.prisma, attacker.userId, "defeat-corrupted-scout");
+
+      const rewardItem = enemy.kind === "signal-wraith" ? "med_patch" : "signal_fragment";
+      const rewards = await grantItem(this.prisma, attacker.userId, rewardItem, 1);
+      if (enemy.kind === "corrupted-scout") {
+        await advanceQuest(this.prisma, attacker.userId, "defeat-corrupted-scout");
+      }
 
       setTimeout(() => {
         enemy.hp = enemy.maxHp;

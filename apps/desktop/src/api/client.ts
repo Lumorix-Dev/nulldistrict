@@ -1,7 +1,9 @@
 import type {
   AuthResponse,
   CharacterSummary,
+  CheckoutSessionResponse,
   InventoryEntry,
+  PurchaseHistoryEntry,
   PublicUser,
   QuestProgressState,
   ServerStatus,
@@ -57,6 +59,12 @@ export const api = {
     }),
   inventory: (token: string) =>
     request<{ inventory: InventoryEntry[] }>("/api/inventory", { token }),
+  useItem: (token: string, itemId: string) =>
+    request<{ inventory: InventoryEntry[]; effect: { heal: number } }>("/api/inventory/use", {
+      method: "POST",
+      token,
+      body: JSON.stringify({ itemId })
+    }),
   quests: (token: string) =>
     request<{ quests: QuestProgressState[] }>("/api/quests", { token }),
   advanceQuest: (token: string, payload: { questId: string; amount?: number; storyFlag?: { key: string; value: boolean } }) =>
@@ -66,8 +74,16 @@ export const api = {
       body: JSON.stringify(payload)
     }),
   shopProducts: () => request<{ products: ShopProduct[]; message?: string }>("/api/shop/products"),
+  purchaseHistory: (token: string) =>
+    request<{ purchases: PurchaseHistoryEntry[] }>("/api/shop/purchases", { token }),
   purchaseTest: (token: string, productSlug: string) =>
     request<{ balances: { soft: number; premium: number } }>("/api/shop/purchase-test", {
+      method: "POST",
+      token,
+      body: JSON.stringify({ productSlug })
+    }),
+  createCheckoutSession: (token: string, productSlug: string) =>
+    request<CheckoutSessionResponse>("/api/shop/stripe/create-checkout-session", {
       method: "POST",
       token,
       body: JSON.stringify({ productSlug })
