@@ -1,7 +1,7 @@
 export const PRODUCT_NAME = "Lumorix: Null District";
 export const SAFE_WINDOWS_PRODUCT_NAME = "Lumorix Null District";
 export const APP_IDENTIFIER = "com.lumorix.nulldistrict";
-export const VERSION = "0.1.0-beta.3";
+export const VERSION = "0.1.0-beta.4";
 export const DEFAULT_SERVER_URL = "http://localhost:4000";
 export const MAX_INSTANCE_PLAYERS = 8;
 export const MIN_INSTANCE_PLAYERS = 4;

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.1.0-beta.4
 
 - Shifted the beta direction toward mystery-first puzzle gameplay instead of fight-first progression.
 - Added server-validated signal sequence puzzles for the First Relay and Broken Terminal.
