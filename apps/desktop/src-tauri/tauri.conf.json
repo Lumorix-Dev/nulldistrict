@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Lumorix Null District",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "identifier": "com.lumorix.nulldistrict",
   "build": {
     "beforeDevCommand": "npm run dev:web",
@@ -28,7 +28,9 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": [
+      "nsis"
+    ],
     "category": "Game",
     "shortDescription": "Dark 2D online mystery RPG beta.",
     "longDescription": "Lumorix: Null District is a dark 2D side-view online mystery RPG beta with co-op exploration, action combat, quests, inventory and fair cosmetics-only monetization.",

@@ -1,6 +1,6 @@
 {
   "name": "@nulldistrict/admin",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@nulldistrict/shared": "0.1.0-beta.1"
+    "@nulldistrict/shared": "0.1.0-beta.2"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

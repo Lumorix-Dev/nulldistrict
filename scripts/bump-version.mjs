@@ -10,6 +10,7 @@ if (!["patch", "minor", "beta"].includes(mode)) {
 const root = process.cwd();
 const files = [
   "package.json",
+  "apps/admin/package.json",
   "apps/desktop/package.json",
   "apps/server/package.json",
   "packages/shared/package.json",
@@ -50,6 +51,14 @@ for (const relative of files) {
   if (!fs.existsSync(file)) continue;
   const pkg = JSON.parse(fs.readFileSync(file, "utf8"));
   pkg.version = next;
+  for (const field of ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"]) {
+    if (!pkg[field]) continue;
+    for (const dependency of Object.keys(pkg[field])) {
+      if (dependency.startsWith("@nulldistrict/")) {
+        pkg[field][dependency] = next;
+      }
+    }
+  }
   fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
 }
 
@@ -67,6 +76,15 @@ if (fs.existsSync(cargoToml)) {
     `version = "${next}"`
   );
   fs.writeFileSync(cargoToml, contents);
+}
+
+const constants = path.join(root, "packages/shared/src/constants.ts");
+if (fs.existsSync(constants)) {
+  const contents = fs.readFileSync(constants, "utf8").replace(
+    /^export const VERSION = ".*";$/m,
+    `export const VERSION = "${next}";`
+  );
+  fs.writeFileSync(constants, contents);
 }
 
 console.log(`Bumped Lumorix: Null District to ${next}`);

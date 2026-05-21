@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.1.0-beta.2
 
 - Added stronger beta gameplay loop: locked Sector A progression, enemy HP bars, enemy ranged pressure, usable med patches, combat notices, and clearer quest objective/reward feedback.
 - Added more pickups and enemy spawns to make the first areas less empty.
