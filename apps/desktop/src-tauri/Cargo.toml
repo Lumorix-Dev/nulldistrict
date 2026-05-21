@@ -1,6 +1,6 @@
 [package]
 name = "lumorix-null-district"
-version = "0.1.0-beta.6"
+version = "0.1.0-beta.7"
 description = "Lumorix: Null District standalone desktop beta"
 authors = ["Lumorix"]
 license = "Proprietary"

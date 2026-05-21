@@ -4,7 +4,7 @@ Lumorix: Null District owns its own app version and GitHub Releases flow. The Lu
 
 ## Version
 
-Current target: `v0.1.0-beta.1`.
+Current target: `v<package.json version>`.
 
 Version lives in:
 
@@ -29,8 +29,8 @@ npm run release:beta
 ```bash
 git status
 git add .
-git commit -m "Release v0.1.0-beta.1"
-git tag v0.1.0-beta.1
+git commit -m "Release v0.1.0-beta.X"
+git tag v0.1.0-beta.X
 git push origin main --tags
 ```
 
@@ -48,7 +48,7 @@ Default behavior:
 
 - Creates a private GitHub repo named `nulldistrict` if no `origin` exists.
 - Pushes `main`.
-- Creates/pushes `v0.1.0-beta.1`.
+- Uses the current package version tag (for example `v0.1.0-beta.7`) unless `-Tag` is provided.
 - Triggers the release workflow.
 
 If you want anyone without GitHub login to download the EXE from GitHub Releases, the repository must be public:

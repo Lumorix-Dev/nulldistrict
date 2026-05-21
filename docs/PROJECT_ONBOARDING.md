@@ -130,9 +130,7 @@ npm run lint
 npm test
 git add .
 git commit -m "release: prepare null district beta X"
-git tag v0.1.0-beta.X
-git push origin main
-git push origin v0.1.0-beta.X
+powershell -ExecutionPolicy Bypass -File scripts/github-release-now.ps1
 ```
 
 GitHub Actions creates the release and uploads:
@@ -155,7 +153,8 @@ After a game release:
 2. Place it in the launcher at:
    - `distribution/manifests/games/lumorix-null-district.json`
    - `src-tauri/manifests/lumorix-null-district.json`
-3. Update `distribution/manifests/catalog.json` to point to the new raw manifest URL.
+3. Keep `distribution/manifests/catalog.json` on the latest release manifest URL so updates are automatic:
+   - `https://github.com/Lumorix-Dev/nulldistrict/releases/latest/download/lumorix-null-district.manifest.json`
 4. Run launcher validation and typecheck.
 5. Commit and push launcher.
 

@@ -64,7 +64,7 @@ export function ShopScreen({ token, premium, onPurchased }: { token: string; pre
       </div>
 
       <div className="shop-grid">
-        {products.map((product) => (
+        {products.length === 0 ? <p>No products available right now.</p> : products.map((product) => (
           <article className="shop-product" key={product.id}>
             <div className="product-icon">
               {product.productType === "PREMIUM_CURRENCY" ? <Gem /> : product.productType === "FOUNDER_PACK" ? <Sparkles /> : <BadgeEuro />}
@@ -72,7 +72,7 @@ export function ShopScreen({ token, premium, onPurchased }: { token: string; pre
             <h3>{product.title}</h3>
             <p>{product.description}</p>
             <div className="price-line">
-              {product.premiumPrice ? `${product.premiumPrice} credits` : product.priceCents ? `EUR ${(product.priceCents / 100).toFixed(2)} later` : "Beta test"}
+              {product.premiumPrice ? `${product.premiumPrice} credits` : product.priceCents ? `EUR ${(product.priceCents / 100).toFixed(2)}` : "Beta test"}
             </div>
             <button className="secondary-button" disabled={loading} onClick={() => void purchase(product.slug)}>
               <Check size={16} /> Test purchase

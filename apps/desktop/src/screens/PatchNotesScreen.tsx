@@ -6,9 +6,9 @@ export function PatchNotesScreen() {
   return (
     <Panel title="Patch Notes" kicker={VERSION}>
       <div className="patch-list">
-        <div><ScrollText /><span>Playable hub, District Entrance, Underground Sector A, and PvP Breach Zone.</span></div>
-        <div><ScrollText /><span>Account login/register, character creation, inventory, quests, shop, and status screens.</span></div>
-        <div><ScrollText /><span>Socket.IO co-op visibility, chat, basic combat authority, and enemy sync.</span></div>
+        <div><ScrollText /><span>Case 001 and Case 002 are playable with extraction rewards, lore fragments and server-authoritative progression.</span></div>
+        <div><ScrollText /><span>Account, character and market flow polished with better validation, loading states and clearer beta messaging.</span></div>
+        <div><ScrollText /><span>Status and settings are improved for day-to-day testing: manual relay refresh plus local setting persistence.</span></div>
       </div>
     </Panel>
   );

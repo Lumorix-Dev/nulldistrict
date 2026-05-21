@@ -12,12 +12,26 @@ export function AuthScreen() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const canSubmit =
+    mode === "login"
+      ? identifier.trim().length > 0 && password.length > 0
+      : username.trim().length >= 3 && email.includes("@") && password.length >= 8;
+
   async function submit() {
+    if (!canSubmit) {
+      setError(
+        mode === "login"
+          ? "Enter username/email and password."
+          : "Use a username (3+ chars), valid email, and a password with at least 8 characters."
+      );
+      return;
+    }
+
     setError("");
     setLoading(true);
     try {
-      if (mode === "login") await login(identifier, password);
-      else await register(username, email, password);
+      if (mode === "login") await login(identifier.trim(), password);
+      else await register(username.trim(), email.trim(), password);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not authenticate.");
     } finally {
@@ -74,10 +88,13 @@ export function AuthScreen() {
         </label>
 
         {error ? <div className="form-error">{error}</div> : null}
-        <button className="primary-button" disabled={loading} onClick={() => void submit()}>
+        <button className="primary-button" disabled={loading || !canSubmit} onClick={() => void submit()}>
           {loading ? "Contacting relay..." : mode === "login" ? "Enter Account" : "Create Account"}
         </button>
-        <button className="text-button" onClick={() => setError("Password reset is a backend placeholder for beta 0.1.")}>
+        <button
+          className="text-button"
+          onClick={() => setError("Password reset is not available in this beta build yet.")}
+        >
           Forgot password
         </button>
       </section>

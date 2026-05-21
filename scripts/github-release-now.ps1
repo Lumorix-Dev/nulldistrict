@@ -2,13 +2,19 @@ param(
   [string]$RepoName = "Lumorix-Dev/nulldistrict",
   [ValidateSet("private", "public")]
   [string]$Visibility = "private",
-  [string]$Tag = "v0.1.0-beta.1"
+  [string]$Tag = ""
 )
 
 $ErrorActionPreference = "Stop"
 
 $root = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $root
+
+$package = Get-Content (Join-Path $root "package.json") -Raw | ConvertFrom-Json
+$currentVersion = $package.version
+if ([string]::IsNullOrWhiteSpace($Tag)) {
+  $Tag = "v$currentVersion"
+}
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
   winget install --id GitHub.cli -e --source winget --accept-package-agreements --accept-source-agreements
