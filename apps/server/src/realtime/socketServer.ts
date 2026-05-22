@@ -199,7 +199,7 @@ export function createSocketServer(httpServer: HttpServer, prisma: PrismaClient)
       const event = raw as VCSyncEvent;
       if (!event || typeof event.type !== "string") return;
 
-      const vcRoomId: string = (event as Record<string, unknown>).roomId as string
+      const vcRoomId: string = event.roomId
         ?? `vc:${socket.data.characterId ?? socket.id}`;
       const mode: "creative" | "puzzle" =
         event.type === "vc:tile" ? "creative" : "puzzle";
@@ -288,7 +288,7 @@ export function createSocketServer(httpServer: HttpServer, prisma: PrismaClient)
         socket.to(`vc:${socket.data.vcRoom}`).emit("voidcraft:sync", {
           type: "vc:leave",
           playerId: socket.data.characterId ?? socket.id,
-        });
+        } as VCLeaveEvent);
       }
     });
   });
