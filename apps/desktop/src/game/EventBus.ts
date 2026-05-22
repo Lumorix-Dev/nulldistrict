@@ -1,4 +1,4 @@
-import type { AreaId, InventoryEntry, QuestProgressState } from "@nulldistrict/shared";
+﻿import type { AreaId, InventoryEntry, QuestProgressState } from "@nulldistrict/shared";
 
 export interface HudState {
   hp: number;
@@ -28,10 +28,10 @@ export type GameEventMap = {
   "run:extract": undefined;
   "area:change": { areaId: AreaId };
   "shop:open": undefined;
-  // ── Creative Mode ──────────────────────────────────────────────────────────
+  // â”€â”€ Creative Mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   /** A tile was placed or erased (own or remote). */
   "voidcraft:tile-placed": { x: number; y: number; layer: 0 | 1 | 2; tileId: string; playerId: string };
-  /** Notifies HUD that selected block changed (from game → HUD). */
+  /** Notifies HUD that selected block changed (from game â†’ HUD). */
   "voidcraft:selected-block-change": { blockId: string };
   /** Notifies HUD that the active layer changed. */
   "voidcraft:layer-change": { layer: 0 | 1 | 2 };
@@ -41,14 +41,40 @@ export type GameEventMap = {
   "voidcraft:world-saved": { slot: number };
   /** World was loaded from a slot. */
   "voidcraft:world-loaded": { slot: number };
-  /** HUD → game: user selected a block from the palette. */
+  /** HUD â†’ game: user selected a block from the palette. */
   "voidcraft:select-block": { blockId: string };
-  /** HUD → game: user selected a tool from the palette. */
+  /** HUD â†’ game: user selected a tool from the palette. */
   "voidcraft:select-tool": { tool: string };
-  /** HUD → game: user selected a layer from the palette. */
+  /** HUD â†’ game: user selected a layer from the palette. */
   "voidcraft:select-layer": { layer: 0 | 1 | 2 };
-  /** HUD → game: user clicked minimap to jump camera. */
+  /** HUD â†’ game: user clicked minimap to jump camera. */
   "voidcraft:minimap-click": { worldX: number; worldY: number };
+  /** An achievement was just unlocked. */
+  "voidcraft:achievement": { id: string; title: string; description: string; icon: string };
+  /** Brush size changed in creative mode. */
+  "voidcraft:brush-change": { size: number };
+  /** Selection rectangle changed or cleared. */
+  "voidcraft:selection-change": { active: boolean; width?: number; height?: number };
+  /** Clipboard content changed. */
+  "voidcraft:clipboard-change": { hasContent: boolean };
+  // â”€â”€ Co-op Multiplayer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /** Remote player placed or erased a tile (via VoidCraftSync). */
+  "voidcraft:remote-tile": { x: number; y: number; layer: 0 | 1 | 2; tileId: string; playerId: string };
+  /** Remote player cursor moved. */
+  "voidcraft:remote-cursor": { playerId: string; worldX: number; worldY: number; color: number };
+  /** Remote player triggered a puzzle action. */
+  "voidcraft:remote-puzzle": Record<string, unknown>;
+  /** A remote player joined the VoidCraft session. */
+  "voidcraft:player-joined": { playerId: string; playerName: string; color: number };
+  /** A remote player left the VoidCraft session. */
+  "voidcraft:player-left": { playerId: string };
+  // â”€â”€ Puzzle / Level â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /** Emitted when an escape room or puzzle level is completed. */
+  "voidcraft:level-complete": { roomId: string; time: number; hints: number; deaths: number };
+  /** Emitted when the level editor sends a definition to be tested. */
+  "voidcraft:level-editor-test": { definition: any };
+  /** FPS display toggled from settings. */
+  "voidcraft:fps-toggle": { enabled: boolean };
 };
 
 type Handler<T> = (payload: T) => void;

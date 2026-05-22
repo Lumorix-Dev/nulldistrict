@@ -1,5 +1,23 @@
 # Changelog
 
+## [Unreleased] - VoidCraft Game Update
+
+### Added
+- **VoidCraft**: Complete creative/puzzle game built into Null District
+  - Creative Mode: Minecraft-inspired sandbox with 37 block types, 5 categories
+  - 5 Escape Room levels with increasing complexity
+  - Procedural world generation (5 themes: cyberpunk-city, underground-cave, void-space, neon-forest, ruins)
+  - Co-op multiplayer support for 1-4 players via socket.io
+  - In-game Level Editor for custom escape rooms
+  - Achievement System: 20 achievements with localStorage persistence
+  - Full audio system using Web Audio API (procedural synthesis, no audio files)
+  - Particle effects system (8 effect types)
+  - Pause menu with settings (volume, particles, FPS counter)
+  - Leaderboard system (local best times per level)
+  - Tutorial walkthrough for new players
+  - Stats/profile screen showing total play time and progress
+  - Credits scene with scrolling text and star particles
+
 ## v0.1.0-beta.6
 
 - Added `Case 002: Mirror Archive` with new evidence, quests, extraction data and case-board support.

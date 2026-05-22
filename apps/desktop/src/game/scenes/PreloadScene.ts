@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { setupAnimations } from "../systems/AnimationSystem";
 
 function makeRect(scene: Phaser.Scene, key: string, width: number, height: number, color: number, stroke = 0x79f2ff) {
   const graphics = scene.add.graphics();
@@ -30,8 +31,9 @@ export class PreloadScene extends Phaser.Scene {
     makeRect(this, "slash", 52, 28, 0x6fffe9, 0xffffff);
     makeRect(this, "projectile", 18, 8, 0x9be7ff, 0xffffff);
     makeRect(this, "enemy-projectile", 16, 8, 0xff5f7e, 0xffb0bf);
-    this.scene.start("HubScene");
+    setupAnimations(this);
     this.scene.launch("UIScene");
     this.scene.launch("DialogueScene");
+    this.scene.start("MainMenuScene");
   }
 }

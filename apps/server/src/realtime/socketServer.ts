@@ -10,11 +10,19 @@ import {
   type ClientToServerEvents,
   type InterServerEvents,
   type ServerToClientEvents,
-  type SocketData
+  type SocketData,
+  type VCSyncEvent,
+  type VCTileEvent,
+  type VCCursorEvent,
+  type VCChatEvent,
+  type VCPuzzleEvent,
+  type VCJoinEvent,
+  type VCLeaveEvent,
 } from "@nulldistrict/shared";
 import { corsOrigins } from "../config/env.js";
 import { verifyAccessToken } from "../utils/security.js";
 import { WorldState } from "./worldState.js";
+import { voidcraftRooms } from "./voidcraftRooms.js";
 
 export function createSocketServer(httpServer: HttpServer, prisma: PrismaClient) {
   const world = new WorldState(prisma);
@@ -186,6 +194,86 @@ export function createSocketServer(httpServer: HttpServer, prisma: PrismaClient)
       });
     });
 
+    // ─── VoidCraft Co-op ───────────────────────────────────────────────
+    socket.on("voidcraft:sync", (raw: unknown) => {
+      const event = raw as VCSyncEvent;
+      if (!event || typeof event.type !== "string") return;
+
+      const vcRoomId: string = (event as Record<string, unknown>).roomId as string
+        ?? `vc:${socket.data.characterId ?? socket.id}`;
+      const mode: "creative" | "puzzle" =
+        event.type === "vc:tile" ? "creative" : "puzzle";
+
+      switch (event.type) {
+        case "vc:join": {
+          const joinEv = event as VCJoinEvent;
+          voidcraftRooms.join(vcRoomId, socket.id, {
+            userId: socket.data.userId,
+            characterId: socket.data.characterId ?? socket.id,
+            playerName: joinEv.playerName,
+            color: joinEv.color,
+          }, mode);
+          socket.data.vcRoom = vcRoomId;
+          socket.join(`vc:${vcRoomId}`);
+
+          const room = voidcraftRooms.getRoom(vcRoomId);
+          if (room) {
+            socket.emit("voidcraft:catchup", {
+              tilePatches: room.tilePatches,
+              puzzleState: room.puzzleState,
+              players: [...room.players.values()].map(p => ({
+                playerId: p.characterId, playerName: p.playerName, color: p.color,
+              })),
+            });
+          }
+          socket.to(`vc:${vcRoomId}`).emit("voidcraft:sync", event);
+          break;
+        }
+
+        case "vc:leave": {
+          const leaveEv = event as VCLeaveEvent;
+          if (socket.data.vcRoom) {
+            voidcraftRooms.leave(socket.data.vcRoom, socket.id);
+            socket.leave(`vc:${socket.data.vcRoom}`);
+            socket.to(`vc:${socket.data.vcRoom}`).emit("voidcraft:sync", leaveEv);
+            socket.data.vcRoom = undefined;
+          }
+          break;
+        }
+
+        case "vc:tile": {
+          const tileEv = event as VCTileEvent;
+          if (socket.data.vcRoom) {
+            voidcraftRooms.recordTile(socket.data.vcRoom, {
+              x: tileEv.x, y: tileEv.y, layer: tileEv.layer,
+              tileId: tileEv.tileId, playerId: tileEv.playerId,
+            });
+          }
+          socket.to(`vc:${vcRoomId}`).emit("voidcraft:sync", tileEv);
+          break;
+        }
+
+        case "vc:cursor":
+          socket.to(`vc:${vcRoomId}`).emit("voidcraft:sync", event);
+          break;
+
+        case "vc:puzzle": {
+          const puzzleEv = event as VCPuzzleEvent;
+          if (socket.data.vcRoom && puzzleEv.entityId) {
+            voidcraftRooms.recordPuzzleState(socket.data.vcRoom, puzzleEv.entityId, { action: puzzleEv.action });
+          }
+          socket.to(`vc:${vcRoomId}`).emit("voidcraft:sync", puzzleEv);
+          break;
+        }
+
+        case "vc:chat": {
+          socket.to(`vc:${vcRoomId}`).emit("voidcraft:sync", event);
+          break;
+        }
+      }
+    });
+    // ──────────────────────────────────────────────────────────────────
+
     socket.on("disconnect", () => {
       if (socket.data.currentRoom) {
         socket.to(socket.data.currentRoom).emit("player:left", {
@@ -194,6 +282,14 @@ export function createSocketServer(httpServer: HttpServer, prisma: PrismaClient)
         });
       }
       world.leave(socket.data.currentRoom, socket.data.characterId);
+      // Clean up any active VoidCraft room
+      if (socket.data.vcRoom) {
+        voidcraftRooms.leave(socket.data.vcRoom, socket.id);
+        socket.to(`vc:${socket.data.vcRoom}`).emit("voidcraft:sync", {
+          type: "vc:leave",
+          playerId: socket.data.characterId ?? socket.id,
+        });
+      }
     });
   });
 
@@ -205,6 +301,9 @@ export function createSocketServer(httpServer: HttpServer, prisma: PrismaClient)
       if (snapshot) io.to(room).emit("enemy:state", snapshot.enemies);
     }
   }, 250).unref();
+
+  // Sweep stale VoidCraft rooms every 10 minutes
+  setInterval(() => voidcraftRooms.sweep(), 10 * 60 * 1000).unref();
 
   return { io, world };
 }

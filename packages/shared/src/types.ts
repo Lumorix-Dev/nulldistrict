@@ -186,6 +186,55 @@ export interface WorldSnapshot {
   serverTime: number;
 }
 
+// ─── VoidCraft Co-op Event Types ──────────────────────────────────────────────
+
+export interface VCSyncEvent {
+  type: string;
+  roomId?: string;
+}
+
+export interface VCJoinEvent extends VCSyncEvent {
+  type: "vc:join";
+  playerName: string;
+  color: number;
+}
+
+export interface VCLeaveEvent extends VCSyncEvent {
+  type: "vc:leave";
+  playerId: string;
+}
+
+export interface VCTileEvent extends VCSyncEvent {
+  type: "vc:tile";
+  x: number;
+  y: number;
+  layer: number;
+  tileId: string;
+  playerId: string;
+}
+
+export interface VCCursorEvent extends VCSyncEvent {
+  type: "vc:cursor";
+  x: number;
+  y: number;
+  playerId: string;
+}
+
+export interface VCPuzzleEvent extends VCSyncEvent {
+  type: "vc:puzzle";
+  entityId: string;
+  action: string;
+  playerId: string;
+}
+
+export interface VCChatEvent extends VCSyncEvent {
+  type: "vc:chat";
+  message: string;
+  playerName: string;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+
 export interface ClientToServerEvents {
   "instance:join": (payload: { areaId: AreaId; characterId: string; instanceId?: string }) => void;
   "instance:leave": () => void;
@@ -205,6 +254,7 @@ export interface ClientToServerEvents {
   "coop:sync-node": (payload: { areaId: AreaId; nodeId: string; puzzleId: string }) => void;
   "chat:send": (payload: { areaId: AreaId; message: string }) => void;
   "party:invite": (payload: { username: string }) => void;
+  "voidcraft:sync": (event: VCSyncEvent) => void;
 }
 
 export interface ServerToClientEvents {
@@ -222,6 +272,12 @@ export interface ServerToClientEvents {
   "player:death-confirmed": (payload: { lostSoftCurrency: number; respawnAreaId: AreaId }) => void;
   "chat:message": (payload: ChatMessage) => void;
   "party:notice": (payload: { message: string }) => void;
+  "voidcraft:sync": (event: VCSyncEvent) => void;
+  "voidcraft:catchup": (data: {
+    tilePatches: Array<{ x: number; y: number; layer: number; tileId: string; playerId: string }>;
+    puzzleState: Record<string, unknown>;
+    players: Array<{ playerId: string; playerName: string; color: number }>;
+  }) => void;
 }
 
 export interface InterServerEvents {
@@ -234,4 +290,5 @@ export interface SocketData {
   role: AccountRole;
   characterId?: string;
   currentRoom?: string;
+  vcRoom?: string;
 }
