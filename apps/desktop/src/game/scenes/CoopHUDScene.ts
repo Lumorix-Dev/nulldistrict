@@ -89,7 +89,7 @@ export class CoopHUDScene extends Phaser.Scene {
     });
   }
 
-  update(): void {
+  override update(): void {
     // Nothing per-frame; layout is event-driven
   }
 

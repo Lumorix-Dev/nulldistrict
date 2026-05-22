@@ -11,6 +11,8 @@ export class EscapeRoom2Scene extends PuzzleScene {
     super("EscapeRoom2Scene");
   }
 
+  public override create(): void { super.create(); }
+
   protected hints: string[] = [
     "The digits for the code are scattered across 4 signs — read them all before entering the code.",
     "You need to step on both pressure plates to unlock the code panel. They are spread far apart.",

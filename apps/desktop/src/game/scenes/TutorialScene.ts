@@ -336,7 +336,7 @@ export class TutorialScene extends Phaser.Scene {
     const cardH = Math.min(440, h - 120);
 
     // Card background
-    const gfxBg = this.make.graphics({ x: 0, y: 0, add: false });
+    const gfxBg = this.make.graphics({ x: 0, y: 0 });
     gfxBg.fillStyle(0x0d1b2e, 0.97);
     gfxBg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 12);
     gfxBg.lineStyle(2, 0x00c8ff, 0.5);
@@ -344,7 +344,7 @@ export class TutorialScene extends Phaser.Scene {
     this.cardContainer.add(gfxBg);
 
     // Accent top border
-    const accentGfx = this.make.graphics({ x: 0, y: 0, add: false });
+    const accentGfx = this.make.graphics({ x: 0, y: 0 });
     accentGfx.lineStyle(3, 0x00c8ff, 0.9);
     accentGfx.lineBetween(-cardW / 2 + 12, -cardH / 2 + 2, cardW / 2 - 12, -cardH / 2 + 2);
     this.cardContainer.add(accentGfx);
@@ -365,7 +365,7 @@ export class TutorialScene extends Phaser.Scene {
     this.cardContainer.add(title);
 
     // Divider
-    const divGfx = this.make.graphics({ x: 0, y: 0, add: false });
+    const divGfx = this.make.graphics({ x: 0, y: 0 });
     divGfx.lineStyle(1, 0x00c8ff, 0.3);
     divGfx.lineBetween(-cardW / 2 + 40, -cardH / 2 + 78, cardW / 2 - 40, -cardH / 2 + 78);
     this.cardContainer.add(divGfx);
@@ -373,7 +373,7 @@ export class TutorialScene extends Phaser.Scene {
     // Demo graphic area (if present)
     const demoY = -cardH / 2 + 160;
     if (card.drawDemo) {
-      const demoGfx = this.make.graphics({ x: 0, y: 0, add: false });
+      const demoGfx = this.make.graphics({ x: 0, y: 0 });
       card.drawDemo(demoGfx, 0, demoY);
       this.cardContainer.add(demoGfx);
     }

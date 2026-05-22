@@ -108,7 +108,7 @@ export class CreativeScene extends Phaser.Scene {
 
   // ── lifecycle ─────────────────────────────────────────────────────────────
 
-  public override create(): void {
+  public create(): void {
     this.world = new TileWorld({ width: WORLD_W, height: WORLD_H, tileSize: TILE_SIZE });
     this.spawnInitialTerrain();
     this.setupCamera();

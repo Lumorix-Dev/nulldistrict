@@ -77,7 +77,7 @@ export class StatsScene extends Phaser.Scene {
     const unlocked = achievements.filter(a => a.unlocked).length;
     const total = achievements.length;
 
-    const statsRows = [
+    const statsRows: [string, string][] = [
       ["⏱  Total Play Time", formatTime(global.totalPlaytime)],
       ["🧱  Total Blocks Placed", String(totalBlocks)],
       ["🔓  Rooms Completed", `${totalRoomsCompleted.size} / ${ROOM_IDS.length}`],

@@ -124,8 +124,7 @@ export class AchievementGalleryScene extends Phaser.Scene {
       this.add.text(-CARD_W / 2 + 18, -28, iconText, {
         fontSize: isSecret ? "22px" : "26px",
         color: a.unlocked ? "#ffffff" : "#334155",
-        alpha,
-      }).setOrigin(0, 0.5)
+      }).setAlpha(alpha).setOrigin(0, 0.5)
     );
 
     // Title

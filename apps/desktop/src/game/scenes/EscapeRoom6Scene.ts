@@ -23,6 +23,8 @@ export class EscapeRoom6Scene extends PuzzleScene {
     super("EscapeRoom6Scene");
   }
 
+  public override create(): void { super.create(); }
+
   protected hints: string[] = [
     "Collect the 3 Void Shards scattered through the room first.",
     "The code on the resonator is related to NULL — think binary. The signs say 0000.",

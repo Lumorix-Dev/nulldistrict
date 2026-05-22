@@ -101,7 +101,7 @@ export class CreativeHUDScene extends Phaser.Scene {
 
   // ── lifecycle ──────────────────────────────────────────────────────────────
 
-  public override create(): void {
+  public create(): void {
     this.buildPalettePanel();
     this.buildMinimap();
     this.buildInfoPanel();

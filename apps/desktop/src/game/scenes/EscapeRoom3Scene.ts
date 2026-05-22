@@ -16,6 +16,8 @@ export class EscapeRoom3Scene extends PuzzleScene {
     super("EscapeRoom3Scene");
   }
 
+  public override create(): void { super.create(); }
+
   protected hints: string[] = [
     "Collect all three mirror shards to power the crystal altar.",
     "The lever order is shown by their colors: Blue → Red → Green.",

@@ -22,6 +22,8 @@ export class EscapeRoom4Scene extends PuzzleScene {
     super("EscapeRoom4Scene");
   }
 
+  public override create(): void { super.create(); }
+
   protected hints: string[] = [
     "Step on the first switch to start the 12-second timer — plan your route before activating.",
     "Use the moving platforms to reach the higher switches quickly.",

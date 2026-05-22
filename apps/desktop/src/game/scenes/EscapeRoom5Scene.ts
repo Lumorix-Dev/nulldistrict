@@ -17,6 +17,8 @@ export class EscapeRoom5Scene extends PuzzleScene {
     super("EscapeRoom5Scene");
   }
 
+  public override create(): void { super.create(); }
+
   protected hints: string[] = [
     "Five sections: Shards → Power Plates → Code Panel → Levers → Vault. Take them in order.",
     "The void code is 0451. Look for clue signs scattered across the code room.",

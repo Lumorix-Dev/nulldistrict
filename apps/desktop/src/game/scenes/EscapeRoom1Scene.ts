@@ -5,7 +5,7 @@ export class EscapeRoom1Scene extends PuzzleScene {
     super("EscapeRoom1Scene");
   }
 
-  public override create() {
+  public override create(): void {
     super.create();
     this.addTutorialBadge();
     this.addBlinkingArrow();

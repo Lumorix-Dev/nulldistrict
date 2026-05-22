@@ -291,7 +291,7 @@ export class CreativeHUDScene extends Phaser.Scene {
       const world = creativeScene?.getWorld?.();
       if (world) {
         // Build tile image in a temporary off-screen graphics object
-        const g = this.make.graphics({ x: 0, y: 0, add: false });
+        const g = this.make.graphics({ x: 0, y: 0 });
         const scaleX = MINIMAP_SIZE / world.width;
         const scaleY = MINIMAP_SIZE / world.height;
 

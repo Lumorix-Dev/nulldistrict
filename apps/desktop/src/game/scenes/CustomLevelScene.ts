@@ -8,7 +8,7 @@ export class CustomLevelScene extends PuzzleScene {
     super("CustomLevelScene");
   }
 
-  public override create() {
+  public override create(): void {
     const data = this.scene.settings.data as { definition: RoomDefinition } | undefined;
     if (!data?.definition) {
       this.scene.start("LevelEditorScene");
