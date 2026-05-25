@@ -170,7 +170,7 @@ export class EscapeRoom2Scene extends PuzzleScene {
   private platesActivated = new Set<string>();
   private digitsFound = new Set<string>();
 
-  protected override onEntityActivated(id: string, time: number) {
+  protected onEntityActivated(id: string, time: number) {
     super.onEntityActivated(id, time);
     if (id.startsWith("plate-")) {
       this.platesActivated.add(id);
@@ -179,7 +179,7 @@ export class EscapeRoom2Scene extends PuzzleScene {
     }
   }
 
-  protected override tryInteract(time: number) {
+  protected tryInteract(time: number) {
     const entity = this.entities.getEntityAt(this.player.x, this.player.y, 80);
     if (entity?.def.id.startsWith("sign-digit-")) {
       this.digitsFound.add(entity.def.id);
@@ -194,14 +194,14 @@ export class EscapeRoom2Scene extends PuzzleScene {
     super.tryInteract(time);
   }
 
-  protected override checkObjectives() {
+  protected checkObjectives() {
     if (this.digitsFound.size >= 4) this.engine.completeObjective("find-all-digits");
     if (this.platesActivated.size >= 4) this.engine.completeObjective("activate-all-plates");
     if (this.engine.isPanelSolved("code-panel")) this.engine.completeObjective("enter-code");
     if (this.engine.allObjectivesComplete()) this.onPuzzleComplete();
   }
 
-  protected override onDoorEntered(doorId: string) {
+  protected onDoorEntered(doorId: string) {
     if (doorId === "exit-portal") {
       this.engine.completeObjective("exit");
       this.checkObjectives();

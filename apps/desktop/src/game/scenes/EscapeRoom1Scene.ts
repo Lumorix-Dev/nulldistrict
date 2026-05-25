@@ -188,7 +188,7 @@ export class EscapeRoom1Scene extends PuzzleScene {
     ]
   };
 
-  protected override checkObjectives() {
+  protected checkObjectives() {
     const engine = this.engine;
     if (engine.hasItem("relay-key")) engine.completeObjective("get-key-a");
     if (engine.hasItem("bypass-key")) engine.completeObjective("get-key-b");
@@ -198,7 +198,7 @@ export class EscapeRoom1Scene extends PuzzleScene {
     if (engine.allObjectivesComplete()) this.onPuzzleComplete();
   }
 
-  protected override onDoorEntered(doorId: string) {
+  protected onDoorEntered(doorId: string) {
     if (doorId === "exit-door") {
       // Both keys needed: relay-key was used to unlock, now use bypass-key too
       if (this.engine.hasItem("bypass-key")) {
