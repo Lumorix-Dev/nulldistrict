@@ -71,7 +71,7 @@ export class PauseMenuScene extends Phaser.Scene {
       { label: "⚙  Settings", color: 0x0d1a2b, action: () => this._toggleSettings() },
       { label: "⌨  Controls", color: 0x0d1a2b, action: () => this._toggleControls() },
       { label: "🏠  Main Menu", color: 0x1a1a0d, action: () => this._goMainMenu() },
-      { label: "✕  Quit to VoidCraft", color: 0x1a0d0d, action: () => this._quitToVoidCraft() },
+      { label: "✕  Exit Room", color: 0x1a0d0d, action: () => this._quitToMainMenu() },
     ];
 
     const startY = cy - panelH / 2 + 96;
@@ -177,13 +177,10 @@ export class PauseMenuScene extends Phaser.Scene {
       ["Movement", "WASD / Arrow Keys"],
       ["Jump", "Space / W"],
       ["Interact", "F"],
-      ["Sprint", "Shift"],
+      ["Hint", "Mouse click on [?]"],
       ["Pause", "ESC"],
-      ["─── Creative ───", ""],
-      ["Place Block", "Left Click"],
-      ["Erase Block", "Right Click"],
-      ["Undo", "Ctrl + Z"],
-      ["Save", "Ctrl + S"],
+      ["Objective Panel", "Bottom left"],
+      ["Inventory", "Bottom right"],
     ];
 
     controls.forEach(([action, key], i) => {
@@ -327,8 +324,8 @@ export class PauseMenuScene extends Phaser.Scene {
     );
   }
 
-  private _quitToVoidCraft() {
+  private _quitToMainMenu() {
     this.scene.stop();
-    this.scene.start("VoidCraftMenuScene");
+    this.scene.start("MainMenuScene");
   }
 }

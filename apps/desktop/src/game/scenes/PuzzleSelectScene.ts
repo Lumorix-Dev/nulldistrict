@@ -1,7 +1,9 @@
 import Phaser from "phaser";
+import { BONUS_ROOM_ID, CAMPAIGN_ROOM_ORDER, ROOM_LABELS, SaveSystem, type SaveSlot } from "../systems/SaveSystem";
 
 interface LevelInfo {
   key: string;
+  roomId: string;
   number: number;
   title: string;
   subtitle: string;
@@ -14,313 +16,294 @@ interface LevelInfo {
 const LEVELS: LevelInfo[] = [
   {
     key: "EscapeRoom1Scene",
+    roomId: "escape-room-1",
     number: 1,
     title: "The Signal Lock",
-    subtitle: "A locked district. Two keys. One way out.",
-    mechanics: ["Key Collection", "Levers", "Locked Doors"],
+    subtitle: "Two keys, one lever, one locked route.",
+    mechanics: ["Keys", "Levers", "Doors"],
     difficulty: 1,
     accentColor: 0x9be7ff
   },
   {
     key: "EscapeRoom2Scene",
+    roomId: "escape-room-2",
     number: 2,
     title: "The Code Chamber",
-    subtitle: "Digits are scattered. Plates must be pressed. The code awaits.",
-    mechanics: ["Pressure Plates", "Code Panels", "Environment Clues"],
+    subtitle: "Read the room. Gather the digits. Enter the sequence.",
+    mechanics: ["Pressure Plates", "Code Panels", "Clues"],
     difficulty: 2,
     accentColor: 0xd18cff
   },
   {
     key: "EscapeRoom3Scene",
+    roomId: "escape-room-3",
     number: 3,
     title: "Mirror Maze",
-    subtitle: "Three shards. One pattern. Blue, then red, then green.",
-    mechanics: ["Crystal Shards", "Lever Patterns", "Mirror Gates"],
+    subtitle: "Collect shards and solve the reflected pattern.",
+    mechanics: ["Shards", "Pattern Levers", "Route Reading"],
     difficulty: 3,
     accentColor: 0x7df9ff
   },
   {
     key: "EscapeRoom4Scene",
+    roomId: "escape-room-4",
     number: 4,
     title: "The Clockwork",
-    subtitle: "12 seconds. 4 switches. Moving platforms. Tick tock.",
-    mechanics: ["Timed Challenges", "Moving Platforms", "Sync Mechanic"],
+    subtitle: "A time window turns movement into the puzzle.",
+    mechanics: ["Timed Switches", "Moving Platforms", "Routing"],
     difficulty: 4,
     accentColor: 0xf1c84b
   },
   {
     key: "EscapeRoom5Scene",
+    roomId: "escape-room-5",
     number: 5,
     title: "The Void Core",
-    subtitle: "Five rooms. Every skill tested. Escape the core.",
-    mechanics: ["All Mechanics Combined", "5-Room Challenge"],
+    subtitle: "A full multi-stage final room testing every skill.",
+    mechanics: ["All Core Mechanics", "Sequence Logic", "Final Gate"],
     difficulty: 5,
     accentColor: 0x9b00ff
   },
   {
     key: "EscapeRoom6Scene",
+    roomId: BONUS_ROOM_ID,
     number: 6,
-    title: "THE NULL CORE",
-    subtitle: "The signal was always leading here. Disrupt the core — before it disrupts you.",
-    mechanics: ["Void Shards", "Lever Sequences", "Code Panels", "All Mechanics"],
+    title: "The Null Core",
+    subtitle: "A secret bonus chamber unlocked after the full campaign.",
+    mechanics: ["Bonus Shards", "Null Code", "Final Lever Chain"],
     difficulty: 5,
     accentColor: 0xffd700,
-    secret: true,
+    secret: true
   }
 ];
 
+function formatSeconds(seconds?: number): string {
+  if (seconds === undefined) return "No clear time";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 export class PuzzleSelectScene extends Phaser.Scene {
   private selectedIndex = 0;
-  private cardBgs: Phaser.GameObjects.Rectangle[] = [];
+  private cards: Phaser.GameObjects.Rectangle[] = [];
+  private activeSlot!: SaveSlot;
 
   public constructor() {
     super("PuzzleSelectScene");
   }
 
   public create() {
-    const cx = this.scale.width / 2;
-    const h = this.scale.height;
+    const slot = SaveSystem.getActiveSlot();
+    if (!slot) {
+      this.scene.start("SaveSelectScene");
+      return;
+    }
+
+    this.activeSlot = slot;
+    SaveSystem.setCurrentScene(this.scene.key);
+
     const w = this.scale.width;
+    const h = this.scale.height;
+    const cx = w / 2;
 
-    // Background
-    this.add.rectangle(cx, h / 2, w, h, 0x040509);
-    const gfx = this.add.graphics();
-    gfx.lineStyle(1, 0x1a2030, 0.4);
-    for (let x = 0; x < w; x += 60) gfx.lineBetween(x, 0, x, h);
-    for (let y = 0; y < h; y += 60) gfx.lineBetween(0, y, w, y);
+    this.add.rectangle(cx, h / 2, w, h, 0x04060b);
+    this.drawGrid(w, h);
 
-    // Title
-    this.add.text(cx, 40, "SELECT LEVEL", {
-      fontFamily: "monospace", fontSize: "32px", color: "#9be7ff"
-    }).setOrigin(0.5);
-    this.add.text(cx, 76, "Escape Room Challenges", {
-      fontFamily: "monospace", fontSize: "13px", color: "#5a8a9a"
+    this.add.text(cx, 42, "CAMPAIGN BOARD", {
+      fontFamily: "monospace",
+      fontSize: "30px",
+      color: "#9be7ff"
     }).setOrigin(0.5);
 
-    // Preview panel (right side, fixed)
-    const pvX = w - 160;
-    const pvBg = this.add.rectangle(pvX, h / 2 + 20, 280, h - 160, 0x08090f, 0.9)
-      .setStrokeStyle(1, 0x334155, 0.8).setDepth(10);
-    const pvTitle = this.add.text(pvX, h / 2 - 120, "", {
-      fontFamily: "monospace", fontSize: "13px", color: "#9be7ff", align: "center", wordWrap: { width: 240 }
-    }).setOrigin(0.5).setDepth(11);
-    const pvMechanics = this.add.text(pvX, h / 2 - 50, "", {
-      fontFamily: "monospace", fontSize: "10px", color: "#d18cff", wordWrap: { width: 240 }, lineSpacing: 4
-    }).setOrigin(0.5).setDepth(11);
-    const pvBest = this.add.text(pvX, h / 2 + 60, "", {
-      fontFamily: "monospace", fontSize: "10px", color: "#ffe066"
-    }).setOrigin(0.5).setDepth(11);
-    const pvStars = this.add.text(pvX, h / 2 + 85, "", {
-      fontFamily: "monospace", fontSize: "14px", color: "#ffe066"
-    }).setOrigin(0.5).setDepth(11);
+    this.add.text(cx, 74, `${slot.name}  |  ${slot.completedRooms.length} rooms cleared`, {
+      fontFamily: "monospace",
+      fontSize: "12px",
+      color: "#45f5c8"
+    }).setOrigin(0.5);
 
-    const showPreview = (level: LevelInfo) => {
-      pvTitle.setText(
-        level.secret
-          ? `⭐ SECRET\nLevel ${level.number}: ${level.title}`
-          : `Level ${level.number}\n${level.title}`
-      );
-      pvMechanics.setText(level.mechanics.join("\n"));
-      const stored = localStorage.getItem(`voidcraft:best-escape-room-${level.number}`);
-      pvBest.setText(stored ? `Best: ${parseFloat(stored).toFixed(1)}s` : "Not yet cleared");
-      pvStars.setText("★".repeat(level.difficulty) + "☆".repeat(5 - level.difficulty));
+    const previewBg = this.add.rectangle(w - 180, h / 2 + 10, 300, h - 150, 0x081019, 0.96)
+      .setStrokeStyle(1, 0x334155, 0.9);
+    void previewBg;
+
+    const previewTitle = this.add.text(w - 180, 156, "", {
+      fontFamily: "monospace",
+      fontSize: "16px",
+      color: "#9be7ff",
+      align: "center",
+      wordWrap: { width: 240 }
+    }).setOrigin(0.5);
+
+    const previewBody = this.add.text(w - 180, 238, "", {
+      fontFamily: "monospace",
+      fontSize: "11px",
+      color: "#7a9aaa",
+      align: "center",
+      lineSpacing: 6,
+      wordWrap: { width: 240 }
+    }).setOrigin(0.5, 0);
+
+    const previewMeta = this.add.text(w - 180, h - 180, "", {
+      fontFamily: "monospace",
+      fontSize: "11px",
+      color: "#ffe066",
+      align: "center",
+      lineSpacing: 5
+    }).setOrigin(0.5);
+
+    const startX = 90;
+    const cardW = Math.min(560, w - 470);
+    const cardH = 82;
+
+    LEVELS.forEach((level, index) => {
+      const y = 150 + index * 92;
+      const card = this.buildCard(startX + cardW / 2, y, cardW, cardH, level, () => {
+        if (this.isLocked(level)) return;
+        this.selectedIndex = index;
+        this.refreshSelection();
+        preview(level);
+      });
+      this.cards.push(card);
+    });
+
+    const preview = (level: LevelInfo) => {
+      const bestTime = slot.highScores[level.roomId];
+      const clearState = slot.completedRooms.includes(level.roomId) ? "Cleared" : this.isLocked(level) ? "Locked" : "Ready";
+      previewTitle.setText(level.secret ? `SECRET ROOM\n${level.title}` : `ROOM ${level.number}\n${level.title}`);
+      previewBody.setText([
+        level.subtitle,
+        "",
+        `Mechanics: ${level.mechanics.join("  |  ")}`
+      ].join("\n"));
+      previewMeta.setText([
+        `${"★".repeat(level.difficulty)}${"☆".repeat(5 - level.difficulty)}`,
+        clearState,
+        `Best: ${formatSeconds(bestTime)}`
+      ].join("\n"));
     };
-    const hidePreview = () => {
-      pvTitle.setText(""); pvMechanics.setText(""); pvBest.setText(""); pvStars.setText("");
-    };
 
-    // Level cards
-    const cardW = Math.min(580, w - 360);
-    const startY = 130;
-    const cardH = 80;
-    const gap = 12;
+    this.refreshSelection();
+    preview(LEVELS[0]!);
 
-    this.cardBgs = [];
-    LEVELS.forEach((level, i) => {
-      const y = startY + i * (cardH + gap) + cardH / 2;
-      const bg = this.createLevelCard(
-        cx - 140, y, cardW, cardH, level,
-        () => { this.selectedIndex = i; this.highlightSelected(); showPreview(level); },
-        () => hidePreview()
-      );
-      this.cardBgs.push(bg);
-    });
-
-    // Keyboard navigation
-    const kb = this.input.keyboard!;
-    kb.on("keydown-UP", () => {
-      this.selectedIndex = (this.selectedIndex - 1 + LEVELS.length) % LEVELS.length;
-      this.highlightSelected();
-      showPreview(LEVELS[this.selectedIndex]!);
-    });
-    kb.on("keydown-DOWN", () => {
-      this.selectedIndex = (this.selectedIndex + 1) % LEVELS.length;
-      this.highlightSelected();
-      showPreview(LEVELS[this.selectedIndex]!);
-    });
-    kb.on("keydown-ENTER", () => {
+    this.input.keyboard?.on("keydown-UP", () => this.moveSelection(-1, preview));
+    this.input.keyboard?.on("keydown-DOWN", () => this.moveSelection(1, preview));
+    this.input.keyboard?.on("keydown-ENTER", () => {
       const level = LEVELS[this.selectedIndex];
-      if (level) this.scene.start(level.key);
+      if (level && !this.isLocked(level)) this.scene.start(level.key);
     });
+    this.input.keyboard?.once("keydown-ESC", () => this.scene.start("MainMenuScene"));
 
-    // Back button
-    const backTxt = this.add.text(50, h - 28, "← Back to Menu", {
-      fontFamily: "monospace", fontSize: "12px", color: "#5a8a9a",
-      backgroundColor: "rgba(5,7,11,0.8)", padding: { x: 8, y: 4 }
-    }).setOrigin(0, 0.5);
-    backTxt.setInteractive({ useHandCursor: true });
-    backTxt.on("pointerover", () => backTxt.setColor("#9be7ff"));
-    backTxt.on("pointerout", () => backTxt.setColor("#5a8a9a"));
-    backTxt.on("pointerdown", () => this.scene.start("VoidCraftMenuScene"));
+    const back = this.add.text(50, h - 28, "BACK", {
+      fontFamily: "monospace",
+      fontSize: "12px",
+      color: "#5a8a9a",
+      backgroundColor: "rgba(5,7,11,0.8)",
+      padding: { x: 8, y: 4 }
+    }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
 
-    // Nav hint
-    this.add.text(cx - 140, h - 28, "↑↓ navigate  •  ENTER to play", {
-      fontFamily: "monospace", fontSize: "10px", color: "#334155"
-    }).setOrigin(0.5);
-
-    // Initial highlight
-    this.highlightSelected();
-    showPreview(LEVELS[0]!);
+    back.on("pointerover", () => back.setColor("#9be7ff"));
+    back.on("pointerout", () => back.setColor("#5a8a9a"));
+    back.on("pointerdown", () => this.scene.start("MainMenuScene"));
   }
 
-  private highlightSelected() {
-    LEVELS.forEach((level, i) => {
-      const bg = this.cardBgs[i];
-      if (!bg) return;
-      if (i === this.selectedIndex) {
-        bg.setStrokeStyle(2, level.accentColor, 1.0);
-        bg.setFillStyle(0x0c1218, 1);
+  private buildCard(x: number, y: number, width: number, height: number, level: LevelInfo, onHover: () => void) {
+    const bg = this.add.rectangle(x, y, width, height, 0x0a1016, 0.95);
+    const locked = this.isLocked(level);
+    bg.setStrokeStyle(1, locked ? 0x334155 : level.accentColor, locked ? 0.45 : 0.7);
+
+    const left = x - width / 2;
+    const accentHex = `#${level.accentColor.toString(16).padStart(6, "0")}`;
+
+    this.add.rectangle(left + 4, y, 8, height - 8, locked ? 0x334155 : level.accentColor, 0.9);
+    this.add.text(left + 22, y - 2, String(level.number), {
+      fontFamily: "monospace",
+      fontSize: "28px",
+      color: locked ? "#334155" : accentHex
+    }).setOrigin(0.5);
+
+    this.add.text(left + 50, y - 18, level.title, {
+      fontFamily: "monospace",
+      fontSize: "16px",
+      color: locked ? "#5a6472" : "#d8eef5"
+    });
+
+    this.add.text(left + 50, y + 2, locked ? this.lockedText(level) : level.subtitle, {
+      fontFamily: "monospace",
+      fontSize: "10px",
+      color: locked ? "#334155" : "#7a9aaa",
+      wordWrap: { width: width - 220 }
+    });
+
+    const bestTime = this.activeSlot.highScores[level.roomId];
+    const rightText = locked
+      ? "LOCKED"
+      : this.activeSlot.completedRooms.includes(level.roomId)
+        ? `CLEAR\n${formatSeconds(bestTime)}`
+        : "PLAY";
+
+    this.add.text(x + width / 2 - 56, y, rightText, {
+      fontFamily: "monospace",
+      fontSize: "12px",
+      color: locked ? "#334155" : this.activeSlot.completedRooms.includes(level.roomId) ? "#45f5c8" : "#ffe066",
+      align: "center"
+    }).setOrigin(0.5);
+
+    bg.setInteractive({ useHandCursor: !locked });
+    bg.on("pointerover", onHover);
+    bg.on("pointerdown", () => {
+      if (!locked) this.scene.start(level.key);
+    });
+
+    return bg;
+  }
+
+  private refreshSelection() {
+    LEVELS.forEach((level, index) => {
+      const card = this.cards[index];
+      if (!card) return;
+      const locked = this.isLocked(level);
+      if (index === this.selectedIndex && !locked) {
+        card.setStrokeStyle(2, level.accentColor, 1);
       } else {
-        bg.setStrokeStyle(1, level.accentColor, 0.35);
-        bg.setFillStyle(0x08090f, 0.95);
+        card.setStrokeStyle(1, locked ? 0x334155 : level.accentColor, locked ? 0.45 : 0.7);
       }
     });
   }
 
-  private createLevelCard(
-    cx: number, cy: number, cardW: number, cardH: number, level: LevelInfo,
-    onHoverIn: () => void, onHoverOut: () => void
-  ): Phaser.GameObjects.Rectangle {
-    const accent = level.accentColor;
-    const accentHex = `#${accent.toString(16).padStart(6, "0")}`;
-    const storageKey = `voidcraft:best-escape-room-${level.number}`;
-    const isCleared = localStorage.getItem(storageKey) !== null;
-    const isLocked = level.number > 1 && localStorage.getItem(`voidcraft:best-escape-room-${level.number - 1}`) === null;
+  private moveSelection(direction: -1 | 1, onSelect: (level: LevelInfo) => void) {
+    const total = LEVELS.length;
+    let next = this.selectedIndex;
+    for (let i = 0; i < total; i++) {
+      next = (next + direction + total) % total;
+      const candidate = LEVELS[next];
+      if (candidate && !this.isLocked(candidate)) {
+        this.selectedIndex = next;
+        this.refreshSelection();
+        onSelect(candidate);
+        return;
+      }
+    }
+  }
 
-    // Card background
-    const bg = this.add.rectangle(cx, cy, cardW, cardH, 0x08090f, 0.95);
-    bg.setStrokeStyle(1, isLocked ? 0x334155 : accent, 0.35);
+  private isLocked(level: LevelInfo) {
+    return !SaveSystem.isRoomUnlocked(level.roomId, this.activeSlot);
+  }
 
-    if (isLocked) {
-      // Greyed-out locked state
-      this.add.rectangle(cx - cardW / 2 + 4, cy, 6, cardH - 4, 0x334155, 0.5);
-      this.add.text(cx - cardW / 2 + 22, cy, `${level.number}`, {
-        fontFamily: "monospace", fontSize: "28px", color: "#334155"
-      }).setOrigin(0.5);
-      this.add.text(cx - cardW / 2 + 60, cy - 8, level.title, {
-        fontFamily: "monospace", fontSize: "16px", color: "#334155"
-      });
-      this.add.text(
-        cx - cardW / 2 + 60, cy + 12,
-        level.secret ? "🔒 Complete all 5 rooms to unlock" : "🔒 Complete previous level to unlock",
-        { fontFamily: "monospace", fontSize: "9px", color: "#334155" }
-      );
-      bg.setInteractive({ useHandCursor: false });
-      return bg;
+  private lockedText(level: LevelInfo) {
+    if (level.roomId === BONUS_ROOM_ID) {
+      return "Clear all five main rooms to unlock the bonus chamber.";
     }
 
-    // Left accent bar
-    this.add.rectangle(cx - cardW / 2 + 4, cy, 6, cardH - 4, accent, 0.8);
+    const roomIndex = CAMPAIGN_ROOM_ORDER.indexOf(level.roomId as (typeof CAMPAIGN_ROOM_ORDER)[number]);
+    const previousRoomId = roomIndex > 0 ? CAMPAIGN_ROOM_ORDER[roomIndex - 1] : undefined;
+    const previous = previousRoomId ? ROOM_LABELS[previousRoomId] : "";
+    return previous ? `Locked until ${previous} is cleared.` : "Locked.";
+  }
 
-    // Level number
-    this.add.text(cx - cardW / 2 + 22, cy, `${level.number}`, {
-      fontFamily: "monospace", fontSize: "28px", color: accentHex
-    }).setOrigin(0.5);
-
-    // Title
-    this.add.text(cx - cardW / 2 + 60, cy - 22, level.title, {
-      fontFamily: "monospace", fontSize: "16px", color: "#d8eef5"
-    });
-
-    // Subtitle
-    this.add.text(cx - cardW / 2 + 60, cy - 3, level.subtitle, {
-      fontFamily: "monospace", fontSize: "10px", color: "#5a8a9a",
-      wordWrap: { width: cardW - 240 }
-    });
-
-    // Mechanics tags
-    const tagStartX = cx - cardW / 2 + 60;
-    level.mechanics.slice(0, 2).forEach((mech, mi) => {
-      this.add.text(tagStartX + mi * 130, cy + 22, mech, {
-        fontFamily: "monospace", fontSize: "9px", color: accentHex,
-        backgroundColor: `rgba(${(accent >> 16) & 0xff},${(accent >> 8) & 0xff},${accent & 0xff},0.12)`,
-        padding: { x: 4, y: 2 }
-      });
-    });
-
-    // Difficulty stars
-    const starX = cx + cardW / 2 - 90;
-    const stars = "★".repeat(level.difficulty) + "☆".repeat(5 - level.difficulty);
-    this.add.text(starX, cy - 14, stars, {
-      fontFamily: "monospace", fontSize: "12px", color: "#ffe066"
-    }).setOrigin(0.5);
-
-    // Completion badge
-    if (isCleared) {
-      const bestTime = parseFloat(localStorage.getItem(storageKey)!).toFixed(1);
-      this.add.text(starX, cy + 6, `✓ ${bestTime}s`, {
-        fontFamily: "monospace", fontSize: "10px", color: "#45f5c8"
-      }).setOrigin(0.5);
-    }
-
-    // Secret room badge + gold border
-    if (level.secret) {
-      bg.setStrokeStyle(2, 0xffd700, 0.7);
-      this.add.text(starX, cy + 22, "⭐ SECRET", {
-        fontFamily: "monospace", fontSize: "10px", color: "#ffd700",
-        backgroundColor: "rgba(80,60,0,0.7)",
-        padding: { x: 4, y: 2 }
-      }).setOrigin(0.5);
-    }
-
-    // Play button
-    const playBg = this.add.rectangle(cx + cardW / 2 - 36, cy, 56, 36, 0x1a3d22, 0.95);
-    playBg.setStrokeStyle(1, 0x45f5c8, 0.7);
-    const playTxt = this.add.text(cx + cardW / 2 - 36, cy, "PLAY", {
-      fontFamily: "monospace", fontSize: "13px", color: "#45f5c8"
-    }).setOrigin(0.5);
-
-    // Border glow tween (idle)
-    const glowTween = this.tweens.add({
-      targets: bg,
-      alpha: { from: 0.92, to: 1 },
-      duration: 1800,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-      paused: true,
-    });
-
-    // Hover effects
-    bg.setInteractive({ useHandCursor: true });
-    bg.on("pointerover", () => {
-      glowTween.play();
-      bg.setStrokeStyle(2, accent, 1.0);
-      playBg.setFillStyle(0x1a5c2a, 0.95);
-      playTxt.setScale(1.05);
-      onHoverIn();
-    });
-    bg.on("pointerout", () => {
-      glowTween.pause();
-      bg.setStrokeStyle(1, accent, 0.35);
-      playBg.setFillStyle(0x1a3d22, 0.95);
-      playTxt.setScale(1);
-      onHoverOut();
-    });
-    bg.on("pointerdown", () => {
-      this.scene.start(level.key);
-    });
-
-    return bg;
+  private drawGrid(w: number, h: number) {
+    const gfx = this.add.graphics();
+    gfx.lineStyle(1, 0x173248, 0.12);
+    for (let x = 0; x < w; x += 60) gfx.lineBetween(x, 0, x, h);
+    for (let y = 0; y < h; y += 60) gfx.lineBetween(0, y, w, y);
   }
 }

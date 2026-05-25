@@ -234,7 +234,8 @@ export class AudioManager {
   playCodeRejected(): void {
     if (!this._enabled) return;
     const c = this.ctx();
-    if (!c || !this._masterGain) return;
+    const masterGain = this._masterGain;
+    if (!c || !masterGain) return;
     const t = c.currentTime;
     ([330, 220] as number[]).forEach((f, i) => {
       const osc = c.createOscillator();
@@ -244,7 +245,7 @@ export class AudioManager {
       g.gain.setValueAtTime(0.15, t + i * 0.12);
       g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.12 + 0.1);
       osc.connect(g);
-      g.connect(this._masterGain);
+      g.connect(masterGain);
       osc.start(t + i * 0.12);
       osc.stop(t + i * 0.12 + 0.11);
     });
@@ -254,7 +255,8 @@ export class AudioManager {
   playPuzzleComplete(): void {
     if (!this._enabled) return;
     const c = this.ctx();
-    if (!c || !this._masterGain) return;
+    const masterGain = this._masterGain;
+    if (!c || !masterGain) return;
     const notes = [523, 659, 784, 1047, 1319, 1568, 2093];
     const t = c.currentTime;
     notes.forEach((f, i) => {
@@ -266,7 +268,7 @@ export class AudioManager {
       g.gain.setValueAtTime(0.2, start);
       g.gain.exponentialRampToValueAtTime(0.0001, start + 0.35);
       osc.connect(g);
-      g.connect(this._masterGain);
+      g.connect(masterGain);
       osc.start(start);
       osc.stop(start + 0.36);
 
@@ -277,7 +279,7 @@ export class AudioManager {
       g2.gain.setValueAtTime(0.07, start);
       g2.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
       osc2.connect(g2);
-      g2.connect(this._masterGain);
+      g2.connect(masterGain);
       osc2.start(start);
       osc2.stop(start + 0.31);
     });

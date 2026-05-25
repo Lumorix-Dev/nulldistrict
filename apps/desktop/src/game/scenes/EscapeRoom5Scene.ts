@@ -19,13 +19,13 @@ export class EscapeRoom5Scene extends PuzzleScene {
 
   public override create(): void { super.create(); }
 
-  protected hints: string[] = [
+  protected override hints: string[] = [
     "Five sections: Shards → Power Plates → Code Panel → Levers → Vault. Take them in order.",
     "The void code is 0451. Look for clue signs scattered across the code room.",
     "The lever sequence is α → Ω → Σ. Wrong order resets the sequence.",
   ];
 
-  protected definition: RoomDefinition = {
+  protected override definition: RoomDefinition = {
     id: "escape-room-5",
     title: "Level 5 — The Void Core",
     width: 3200,
@@ -34,7 +34,7 @@ export class EscapeRoom5Scene extends PuzzleScene {
     accentColor: 0x9b00ff,
     spawnX: 100,
     spawnY: 760,
-    nextScene: "VoidCraftMenuScene",
+    nextScene: "CreditsScene",
     checkpoints: [
       { id: "cp1", x: 880,  y: 645 },
       { id: "cp2", x: 1580, y: 620 },

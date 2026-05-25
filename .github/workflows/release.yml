@@ -45,7 +45,7 @@ jobs:
           projectPath: apps/desktop
           tagName: ${{ github.ref_name }}
           releaseName: "Lumorix: Null District ${{ github.ref_name }}"
-          releaseBody: "See CHANGELOG.md for release notes. Windows installer artifacts are attached below."
+          releaseBody: "See CHANGELOG.md for release notes. Windows installer and launcher artifacts are attached below."
           releaseDraft: false
           prerelease: ${{ contains(github.ref_name, 'beta') }}
           args: --target x86_64-pc-windows-msvc
@@ -86,16 +86,16 @@ jobs:
             platform = "desktop"
             name = "Lumorix: Null District"
             version = $version
-            description = "A dark 2D side-view online mystery RPG beta set inside a sealed corrupted district with co-op exploration, action combat, quests, inventory and fair cosmetics-only monetization."
+            description = "A dark 2D side-view solo escape-room campaign beta set inside the sealed Null District, featuring six handcrafted puzzle rooms, local case-file progression and atmospheric platforming."
             developer = "Lumorix"
             releaseDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd")
-            categories = @("Mystery", "RPG", "Online", "Action")
+            categories = @("Puzzle", "Mystery", "Adventure", "Singleplayer")
             tags = @(
               [ordered]@{ id = "mystery"; weight = 3 },
-              [ordered]@{ id = "online"; weight = 3 },
-              [ordered]@{ id = "rpg"; weight = 3 },
+              [ordered]@{ id = "escape_room"; weight = 3 },
+              [ordered]@{ id = "puzzle"; weight = 3 },
               [ordered]@{ id = "pixel_art"; weight = 2 },
-              [ordered]@{ id = "co_op"; weight = 2 },
+              [ordered]@{ id = "singleplayer"; weight = 2 },
               [ordered]@{ id = "dark_sci_fi"; weight = 2 }
             )
             coverImage = "/assets/games/lumorix-null-district-cover.svg"
@@ -118,9 +118,9 @@ jobs:
                 version = $version
                 date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd")
                 items = @(
-                  "Launcher-ready beta package for the standalone Null District desktop client.",
-                  "Connects to the live Strato backend for accounts, characters, multiplayer, quests, inventory and shop catalog.",
-                  "Includes Case 001, Case 002, Signal Haven, District Entrance, Underground Sector A, Mirror Archive, Blackout Theater and PvP Breach Zone content."
+                  "Offline-first solo escape-room campaign beta package for the standalone Null District desktop client.",
+                  "Includes case files, campaign unlock progression, local best times and persistent room completion tracking.",
+                  "Ships six handcrafted puzzle rooms, including a hidden sixth chamber unlocked after the main campaign."
                 )
               }
             )

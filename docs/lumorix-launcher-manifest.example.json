@@ -1,7 +1,7 @@
 {
   "gameId": "lumorix-null-district",
   "displayName": "Lumorix: Null District",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.9",
   "releaseChannel": "beta",
   "platforms": {
     "windows-x64": {
@@ -14,7 +14,7 @@
   },
   "updates": {
     "provider": "github-releases",
-    "repo": "lumorix/nulldistrict",
-    "latestJsonUrl": "https://github.com/lumorix/nulldistrict/releases/latest/download/latest.json"
+    "repo": "Lumorix-Dev/nulldistrict",
+    "latestJsonUrl": "https://github.com/Lumorix-Dev/nulldistrict/releases/latest/download/latest.json"
   }
 }

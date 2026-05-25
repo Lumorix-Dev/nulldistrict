@@ -11,15 +11,13 @@ export class EscapeRoom2Scene extends PuzzleScene {
     super("EscapeRoom2Scene");
   }
 
-  public override create(): void { super.create(); }
-
-  protected hints: string[] = [
+  protected override hints: string[] = [
     "The digits for the code are scattered across 4 signs — read them all before entering the code.",
     "You need to step on both pressure plates to unlock the code panel. They are spread far apart.",
     "The code is 4 digits. Look for numbered signs to piece together the sequence.",
   ];
 
-  protected definition: RoomDefinition = {
+  protected override definition: RoomDefinition = {
     id: "escape-room-2",
     title: "Level 2 — The Code Chamber",
     width: 2240,
@@ -170,7 +168,7 @@ export class EscapeRoom2Scene extends PuzzleScene {
   private platesActivated = new Set<string>();
   private digitsFound = new Set<string>();
 
-  protected onEntityActivated(id: string, time: number) {
+  protected override onEntityActivated(id: string, time: number) {
     super.onEntityActivated(id, time);
     if (id.startsWith("plate-")) {
       this.platesActivated.add(id);
@@ -179,7 +177,7 @@ export class EscapeRoom2Scene extends PuzzleScene {
     }
   }
 
-  protected tryInteract(time: number) {
+  protected override tryInteract(time: number) {
     const entity = this.entities.getEntityAt(this.player.x, this.player.y, 80);
     if (entity?.def.id.startsWith("sign-digit-")) {
       this.digitsFound.add(entity.def.id);
@@ -194,14 +192,14 @@ export class EscapeRoom2Scene extends PuzzleScene {
     super.tryInteract(time);
   }
 
-  protected checkObjectives() {
+  protected override checkObjectives() {
     if (this.digitsFound.size >= 4) this.engine.completeObjective("find-all-digits");
     if (this.platesActivated.size >= 4) this.engine.completeObjective("activate-all-plates");
     if (this.engine.isPanelSolved("code-panel")) this.engine.completeObjective("enter-code");
     if (this.engine.allObjectivesComplete()) this.onPuzzleComplete();
   }
 
-  protected onDoorEntered(doorId: string) {
+  protected override onDoorEntered(doorId: string) {
     if (doorId === "exit-portal") {
       this.engine.completeObjective("exit");
       this.checkObjectives();

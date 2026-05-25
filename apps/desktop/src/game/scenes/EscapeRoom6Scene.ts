@@ -23,15 +23,13 @@ export class EscapeRoom6Scene extends PuzzleScene {
     super("EscapeRoom6Scene");
   }
 
-  public override create(): void { super.create(); }
-
-  protected hints: string[] = [
+  protected override hints: string[] = [
     "Collect the 3 Void Shards scattered through the room first.",
     "The code on the resonator is related to NULL — think binary. The signs say 0000.",
     "Levers must go: D first, then C, then B, then A. Check the sign near lever B.",
   ];
 
-  protected definition: RoomDefinition = {
+  protected override definition: RoomDefinition = {
     id: "escape-room-6",
     title: "SECRET — THE NULL CORE",
     width: 2560,
@@ -40,7 +38,7 @@ export class EscapeRoom6Scene extends PuzzleScene {
     accentColor: 0x00c8ff,
     spawnX: 50,
     spawnY: 700,
-    nextScene: "VoidCraftMenuScene",
+    nextScene: "MainMenuScene",
     checkpoints: [
       { id: "cp1", x: 500,  y: 700 },
       { id: "cp2", x: 1300, y: 700 },

@@ -16,15 +16,13 @@ export class EscapeRoom3Scene extends PuzzleScene {
     super("EscapeRoom3Scene");
   }
 
-  public override create(): void { super.create(); }
-
-  protected hints: string[] = [
+  protected override hints: string[] = [
     "Collect all three mirror shards to power the crystal altar.",
     "The lever order is shown by their colors: Blue → Red → Green.",
     "Wrong lever order resets progress — study the pattern sign before pulling.",
   ];
 
-  protected definition: RoomDefinition = {
+  protected override definition: RoomDefinition = {
     id: "escape-room-3",
     title: "Level 3 — Mirror Maze",
     width: 2560,

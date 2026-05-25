@@ -55,10 +55,10 @@ export class AchievementGalleryScene extends Phaser.Scene {
     }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(12).setInteractive({ useHandCursor: true });
     backBtn.on("pointerover", () => backBtn.setColor("#9be7ff"));
     backBtn.on("pointerout", () => backBtn.setColor("#5a8a9a"));
-    backBtn.on("pointerdown", () => this.scene.start("VoidCraftMenuScene"));
+    backBtn.on("pointerdown", () => this.scene.start("MainMenuScene"));
 
     // ── ESC to go back ────────────────────────────────────────────────────────
-    this.input.keyboard!.on("keydown-ESC", () => this.scene.start("VoidCraftMenuScene"));
+    this.input.keyboard!.on("keydown-ESC", () => this.scene.start("MainMenuScene"));
 
     // ── Mouse wheel scrolling ─────────────────────────────────────────────────
     this.input.on("wheel", (_ptr: Phaser.Input.Pointer, _gos: unknown, _dx: number, dy: number) => {

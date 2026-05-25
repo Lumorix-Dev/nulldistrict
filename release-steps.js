@@ -1,148 +1,118 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+const fs = require("fs");
+const path = require("path");
+const { execSync } = require("child_process");
 
-console.log('=== STEP 1: Update manifest.json ===');
+const root = process.cwd();
+const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+const version = packageJson.version;
+const tag = `v${version}`;
+const manifestPath = path.join(root, "launcher-release", "lumorix-null-district.manifest.json");
+const downloadUrl = `https://github.com/Lumorix-Dev/nulldistrict/releases/download/${tag}/lumorix-null-district-win64.zip`;
+const releaseDate = new Date().toISOString().slice(0, 10);
+
+const releaseNotes = `## Solo Escape Room Campaign Update
+
+Null District is now packaged and released as an offline-first solo escape-room campaign.
+
+### Included in ${tag}
+- Direct offline desktop flow without login or account gating
+- Case files, room unlock progression and persistent local best times
+- Six handcrafted puzzle rooms, including the hidden sixth chamber
+- Reworked campaign board, tutorial, achievements, credits, pause menu and settings
+- Launcher manifest and release metadata aligned with the new solo product direction`;
+
+console.log("=== STEP 1: Update manifest.json ===");
 try {
-  const file = path.join(process.cwd(), 'launcher-release', 'lumorix-null-district.manifest.json');
-  let content = fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '');
-  const m = JSON.parse(content);
-  m.version = '0.1.0-beta.8';
-  m.download.url = 'https://github.com/Lumorix-Dev/nulldistrict/releases/download/v0.1.0-beta.8/lumorix-null-district-win64.zip';
-  m.changelog = [
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8").replace(/^\uFEFF/, ""));
+  manifest.version = version;
+  manifest.releaseDate = releaseDate;
+  manifest.description = "A dark 2D side-view solo escape-room campaign beta set inside the sealed Null District, featuring six handcrafted puzzle rooms, local case-file progression and atmospheric platforming.";
+  manifest.categories = ["Puzzle", "Mystery", "Adventure", "Singleplayer"];
+  manifest.tags = [
+    { id: "mystery", weight: 3 },
+    { id: "escape_room", weight: 3 },
+    { id: "puzzle", weight: 3 },
+    { id: "pixel_art", weight: 2 },
+    { id: "singleplayer", weight: 2 },
+    { id: "dark_sci_fi", weight: 2 }
+  ];
+  manifest.download.url = downloadUrl;
+  manifest.changelog = [
     {
-      version: '0.1.0-beta.8',
-      date: '2026-05-22',
+      version,
+      date: releaseDate,
       items: [
-        'VoidCraft: Complete creative sandbox and puzzle game now built into Null District.',
-        'Creative Mode: Place 37 block types across 3 layers, flood fill, undo/redo, brush sizes, copy/paste.',
-        '6 Escape Rooms including secret bonus level THE NULL CORE (unlocked after all 5).',
-        'Procedural world generation with 5 themes: cyberpunk-city, cave, void-space, neon-forest, ruins.',
-        'Co-op multiplayer for 1-4 players with real-time tile sync and remote cursors.',
-        'Achievement system with 20 achievements and persistent progress.',
-        'In-game level editor: build and test custom escape rooms, export/import JSON.',
-        'Camera effects: screen shake, zoom pulse, slow-motion, flash on all key interactions.',
-        'Full Settings scene: audio sliders, display toggles, keybindings reference.',
-        'Save system with 3 slots, leaderboard, stats screen, tutorial, and credits.'
+        "Rebuilt the desktop game as an offline-first solo escape-room campaign.",
+        "Added case files, campaign room unlocks, local best times and persistent progression.",
+        "Updated menus, tutorial, credits, achievements and settings for the new solo investigation loop."
       ]
     },
-    {
-      version: '0.1.0-beta.1',
-      date: '2026-05-19',
-      items: [
-        'First launcher-ready beta package for the standalone Null District desktop client.',
-        'Connects to the live Strato backend for accounts, characters, multiplayer, quests, inventory and shop catalog.',
-        'Includes Signal Haven, District Entrance, Underground Sector A and PvP Breach Zone vertical-slice content.'
-      ]
-    }
-  ];
-  fs.writeFileSync(file, JSON.stringify(m, null, 2));
-  console.log('✓ Manifest updated OK\n');
-} catch (e) {
-  console.error('✗ Step 1 failed:', e.message);
+    ...(manifest.changelog ?? [])
+  ].filter((entry, index, array) => array.findIndex((candidate) => candidate.version === entry.version) === index);
+
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  console.log("Manifest updated OK\n");
+} catch (error) {
+  console.error("Step 1 failed:", error.message);
   process.exit(1);
 }
 
-console.log('=== STEP 2: Verify manifest ===');
+console.log("=== STEP 2: Stage and commit ===");
 try {
-  const m = JSON.parse(fs.readFileSync('launcher-release/lumorix-null-district.manifest.json', 'utf8'));
-  console.log('version:', m.version);
-  console.log('changelog entries:', m.changelog.length);
-  console.log('first changelog:', m.changelog[0].version);
-  console.log('✓ Verification OK\n');
-} catch (e) {
-  console.error('✗ Step 2 failed:', e.message);
-  process.exit(1);
-}
+  execSync("git add -A", { stdio: "inherit" });
+  const status = execSync("git status --short", { encoding: "utf8" });
+  console.log(status || "No pending changes");
 
-console.log('=== STEP 3: Stage and commit ===');
-try {
-  execSync('git add -A', { stdio: 'inherit' });
-  const status = execSync('git status --short', { encoding: 'utf8' });
-  console.log('Git status:');
-  console.log(status);
-  
   if (status.trim()) {
-    execSync('git commit -m "release: bump to v0.1.0-beta.8 - VoidCraft game update" -m "- Bump all package versions to 0.1.0-beta.8\n- Update launcher manifest with VoidCraft changelog\n- All VoidCraft game files committed\n\nCo-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"', { stdio: 'inherit' });
-    console.log('✓ Commit created\n');
-  } else {
-    console.log('✓ No changes to commit\n');
+    execSync(`git commit -m "release: bump to ${tag}"`, { stdio: "inherit" });
+    console.log("Commit created\n");
   }
-} catch (e) {
-  console.error('✗ Step 3 failed:', e.message);
+} catch (error) {
+  console.error("Step 2 failed:", error.message);
   process.exit(1);
 }
 
-console.log('=== STEP 4: Push to GitHub ===');
+console.log("=== STEP 3: Push main ===");
 try {
-  execSync('git push origin main', { stdio: 'inherit' });
-  console.log('✓ Push completed\n');
-} catch (e) {
-  console.error('✗ Step 4 failed:', e.message);
+  execSync("git push origin main", { stdio: "inherit" });
+  console.log("Push completed\n");
+} catch (error) {
+  console.error("Step 3 failed:", error.message);
   process.exit(1);
 }
 
-console.log('=== STEP 5: Create git tag ===');
+console.log("=== STEP 4: Tag and push ===");
 try {
   try {
-    execSync('git tag v0.1.0-beta.8', { stdio: 'inherit' });
-    console.log('✓ Tag created');
-  } catch (e) {
-    if (e.message.includes('already exists')) {
-      console.log('✓ Tag already exists, skipping');
-    } else {
-      throw e;
-    }
+    execSync(`git tag ${tag}`, { stdio: "inherit" });
+  } catch (error) {
+    if (!String(error.message).includes("already exists")) throw error;
   }
-  execSync('git push origin v0.1.0-beta.8', { stdio: 'inherit' });
-  console.log('✓ Tag pushed\n');
-} catch (e) {
-  console.error('✗ Step 5 failed:', e.message);
+  execSync(`git push origin ${tag}`, { stdio: "inherit" });
+  console.log("Tag pushed\n");
+} catch (error) {
+  console.error("Step 4 failed:", error.message);
   process.exit(1);
 }
 
-console.log('=== STEP 6: Create GitHub release ===');
+console.log("=== STEP 5: Create or update GitHub release ===");
 try {
-  const releaseNotes = `## VoidCraft - Complete Game Update
-
-A full creative sandbox + puzzle game is now built into Null District.
-
-### New Content
-- Creative Mode with 37 block types, procedural worlds (5 themes), co-op sync
-- 6 Escape Rooms (5 main + secret bonus 'THE NULL CORE')
-- 20 Achievements, leaderboard, stats, save slots
-- In-game level editor, tutorial, credits scene
-- Camera effects, full audio system, particle effects
-
-Access VoidCraft from the main menu via the VoidCraft button.`;
-  
   try {
-    execSync(`gh release create v0.1.0-beta.8 --title "Lumorix: Null District v0.1.0-beta.8 - VoidCraft Update" --notes "${releaseNotes.replace(/"/g, '\\"')}" launcher-release/lumorix-null-district-win64.zip launcher-release/lumorix-null-district.manifest.json`, { stdio: 'inherit' });
-    console.log('✓ Release created\n');
-  } catch (e) {
-    if (e.message.includes('already exists')) {
-      console.log('✓ Release already exists, updating...');
-      execSync('gh release edit v0.1.0-beta.8 --title "Lumorix: Null District v0.1.0-beta.8 - VoidCraft Update"', { stdio: 'inherit' });
-      console.log('✓ Release updated\n');
-    } else {
-      throw e;
-    }
+    execSync(
+      `gh release create ${tag} --title "Lumorix: Null District ${tag} - Solo Escape Room Campaign" --notes "${releaseNotes.replace(/"/g, '\\"')}" launcher-release/lumorix-null-district-win64.zip launcher-release/lumorix-null-district.manifest.json launcher-release/lumorix-null-district-win64.sha256.txt`,
+      { stdio: "inherit" }
+    );
+  } catch (error) {
+    if (!String(error.message).includes("already exists")) throw error;
+    execSync(
+      `gh release edit ${tag} --title "Lumorix: Null District ${tag} - Solo Escape Room Campaign" --notes "${releaseNotes.replace(/"/g, '\\"')}"`,
+      { stdio: "inherit" }
+    );
   }
-} catch (e) {
-  console.error('✗ Step 6 failed:', e.message);
+  console.log("Release updated\n");
+} catch (error) {
+  console.error("Step 5 failed:", error.message);
   process.exit(1);
 }
-
-console.log('=== STEP 7: Get release URL ===');
-try {
-  const url = execSync('gh release view v0.1.0-beta.8 --json url -q .url', { encoding: 'utf8' });
-  console.log('Release URL:', url.trim());
-  console.log('✓ Release URL retrieved\n');
-} catch (e) {
-  console.error('✗ Step 7 failed:', e.message);
-  process.exit(1);
-}
-
-console.log('=== ALL STEPS COMPLETED ===');

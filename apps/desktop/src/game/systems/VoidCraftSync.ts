@@ -145,8 +145,9 @@ export class VoidCraftSync {
         if (data.tilePatches) {
           for (const patch of data.tilePatches) {
             if (patch.playerId === this.localPlayerId) continue;
+            const layer = patch.layer as 0 | 1 | 2;
             gameBus.emit('voidcraft:remote-tile', {
-              x: patch.x, y: patch.y, layer: patch.layer,
+              x: patch.x, y: patch.y, layer,
               tileId: patch.tileId, playerId: patch.playerId,
             });
           }

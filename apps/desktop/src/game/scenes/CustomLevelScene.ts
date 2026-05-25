@@ -1,8 +1,8 @@
 import { PuzzleScene, type RoomDefinition } from "./PuzzleScene";
 
 export class CustomLevelScene extends PuzzleScene {
-  protected definition!: RoomDefinition;
-  protected hints = ["Custom level — no hints available.", "", ""];
+  protected override definition!: RoomDefinition;
+  protected override hints = ["Custom level - no hints available.", "", ""];
 
   public constructor() {
     super("CustomLevelScene");
@@ -14,6 +14,7 @@ export class CustomLevelScene extends PuzzleScene {
       this.scene.start("LevelEditorScene");
       return;
     }
+
     this.definition = data.definition;
     super.create();
   }

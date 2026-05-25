@@ -17,14 +17,14 @@ export class ParticleSystem {
 
   private ensureTextures(): void {
     if (!this.scene.textures.exists('particle-square')) {
-      const g = this.scene.make.graphics({ add: false });
+      const g = this.scene.add.graphics();
       g.fillStyle(0xffffff, 1);
       g.fillRect(0, 0, 4, 4);
       g.generateTexture('particle-square', 4, 4);
       g.destroy();
     }
     if (!this.scene.textures.exists('particle-circle')) {
-      const g = this.scene.make.graphics({ add: false });
+      const g = this.scene.add.graphics();
       g.fillStyle(0xffffff, 1);
       g.fillCircle(3, 3, 3);
       g.generateTexture('particle-circle', 6, 6);

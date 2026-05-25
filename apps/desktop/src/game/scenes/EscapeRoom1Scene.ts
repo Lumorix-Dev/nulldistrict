@@ -73,13 +73,13 @@ export class EscapeRoom1Scene extends PuzzleScene {
     this.input.keyboard!.once("keydown-F", cleanup);
   }
 
-  protected hints: string[] = [
+  protected override hints: string[] = [
     "Look around the room carefully — both keys are hidden on platforms throughout the level.",
     "Both keys are needed to power the junction lever. Check all platforms, high and low.",
     "The lever is at the right end of the level. Activate it once both keys are collected.",
   ];
 
-  protected definition: RoomDefinition = {
+  protected override definition: RoomDefinition = {
     id: "escape-room-1",
     title: "Level 1 — The Signal Lock",
     width: 1920,
@@ -188,7 +188,7 @@ export class EscapeRoom1Scene extends PuzzleScene {
     ]
   };
 
-  protected checkObjectives() {
+  protected override checkObjectives() {
     const engine = this.engine;
     if (engine.hasItem("relay-key")) engine.completeObjective("get-key-a");
     if (engine.hasItem("bypass-key")) engine.completeObjective("get-key-b");
@@ -198,7 +198,7 @@ export class EscapeRoom1Scene extends PuzzleScene {
     if (engine.allObjectivesComplete()) this.onPuzzleComplete();
   }
 
-  protected onDoorEntered(doorId: string) {
+  protected override onDoorEntered(doorId: string) {
     if (doorId === "exit-door") {
       // Both keys needed: relay-key was used to unlock, now use bypass-key too
       if (this.engine.hasItem("bypass-key")) {

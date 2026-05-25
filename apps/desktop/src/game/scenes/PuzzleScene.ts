@@ -8,6 +8,7 @@ import { ParticleSystem } from "../systems/ParticleSystem";
 import { UISystem } from "../systems/UISystem";
 import { FPSCounter } from "../systems/FPSCounter";
 import { achievementSystem } from "../systems/AchievementSystem";
+import { SaveSystem } from "../systems/SaveSystem";
 import { LeaderboardScene } from "./LeaderboardScene";
 import { CameraEffects } from "../systems/CameraEffects";
 
@@ -72,9 +73,12 @@ export abstract class PuzzleScene extends Phaser.Scene {
   private notificationQueue: string[] = [];
   private activeNotification: Phaser.GameObjects.Container | null = null;
   private _wasGrounded = false;
+  private sessionStartedAt = 0;
 
   public create() {
     const def = this.definition;
+    this.sessionStartedAt = Date.now();
+    SaveSystem.setCurrentScene(this.scene.key);
 
     this.physics.world.setBounds(0, 0, def.width, def.height);
     this.cameras.main.setBounds(0, 0, def.width, def.height);
@@ -108,6 +112,7 @@ export abstract class PuzzleScene extends Phaser.Scene {
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.offAchievementListener();
+      SaveSystem.addPlaytime(Date.now() - this.sessionStartedAt);
     });
 
     // ESC → pause
@@ -450,16 +455,14 @@ export abstract class PuzzleScene extends Phaser.Scene {
     CameraEffects.roomComplete(this);
     this.particles.spawnPuzzleComplete(this.player.x, this.player.y);
 
-    // Best-time tracking
     const elapsed = this.engine.getElapsedSeconds();
-    const storageKey = `voidcraft:best-${this.definition.id}`;
-    const stored = parseFloat(localStorage.getItem(storageKey) ?? "");
-    const isNewBest = isNaN(stored) || elapsed < stored;
-    if (isNewBest) localStorage.setItem(storageKey, elapsed.toFixed(2));
+    const previousBest = SaveSystem.getActiveSlot()?.highScores[this.definition.id];
+    const isNewBest = previousBest === undefined || elapsed < previousBest;
+    SaveSystem.recordRoomCompletion(this.definition.id, elapsed);
 
     achievementSystem.checkPuzzleComplete(this.definition.id, elapsed, this.hintsUsed, this.deathCount);
     LeaderboardScene.recordScore(this.definition.id, "Player", Math.floor(elapsed));
-    this.showWinBanner(elapsed, isNewBest ? undefined : stored);
+    this.showWinBanner(elapsed, isNewBest ? undefined : previousBest);
   }
 
   private showWinBanner(elapsed: number, prevBest?: number) {

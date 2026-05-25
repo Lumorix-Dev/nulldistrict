@@ -515,6 +515,36 @@ input:focus {
   inset: 0;
 }
 
+.solo-toolbar {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(6, 10, 16, 0.82);
+  box-shadow: var(--shadow);
+}
+
+.solo-toolbar > div {
+  display: grid;
+  gap: 3px;
+  text-align: right;
+}
+
+.solo-toolbar strong {
+  font-size: 13px;
+}
+
+.solo-toolbar span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .game-hud.top {
   position: absolute;
   left: 18px;

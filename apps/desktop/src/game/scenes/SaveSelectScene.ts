@@ -1,16 +1,5 @@
 import Phaser from "phaser";
-import { SaveSystem, type SaveSlot } from "../systems/SaveSystem";
-
-export interface SaveSelectInitData {
-  /** The scene to launch after a slot is chosen (receives { slot: number }) */
-  targetScene: string;
-  /** Optional HUD scene to launch alongside targetScene */
-  hudScene?: string;
-  /** Title override, e.g. "START CREATIVE MODE" */
-  subtitle?: string;
-}
-
-const ROOM_COUNT = 5;
+import { CAMPAIGN_ROOM_ORDER, SaveSystem, type SaveSlot } from "../systems/SaveSystem";
 
 function formatTime(ms: number): string {
   const totalSec = Math.floor(ms / 1000);
@@ -21,14 +10,8 @@ function formatTime(ms: number): string {
 }
 
 export class SaveSelectScene extends Phaser.Scene {
-  private initData!: SaveSelectInitData;
-
   public constructor() {
     super("SaveSelectScene");
-  }
-
-  public init(data: SaveSelectInitData) {
-    this.initData = data;
   }
 
   public create() {
@@ -36,254 +19,175 @@ export class SaveSelectScene extends Phaser.Scene {
     const h = this.scale.height;
     const cx = w / 2;
     const cy = h / 2;
-
-    // ── Background ────────────────────────────────────────────────────────────
-    this.add.rectangle(cx, cy, w, h, 0x0a0a1a).setScrollFactor(0);
-    this.drawGrid(w, h);
-    this.spawnParticles(w, h);
-
-    // ── Title ─────────────────────────────────────────────────────────────────
-    this.add.text(cx, cy - 200, "SELECT SAVE SLOT", {
-      fontFamily: "monospace", fontSize: "28px", color: "#00c8ff"
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(10);
-
-    if (this.initData?.subtitle) {
-      this.add.text(cx, cy - 166, this.initData.subtitle, {
-        fontFamily: "monospace", fontSize: "13px", color: "#334155"
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(10);
-    }
-
-    // Divider
-    const divGfx = this.add.graphics().setScrollFactor(0).setDepth(10);
-    divGfx.lineStyle(1, 0x00c8ff, 0.2);
-    divGfx.lineBetween(cx - 300, cy - 150, cx + 300, cy - 150);
-
-    // ── Slot cards ────────────────────────────────────────────────────────────
     const slots = SaveSystem.getAllSlots();
-    const cardW = Math.min(240, (w - 80) / 3);
-    const cardH = 200;
-    const cardGap = 16;
-    const totalW = cardW * 3 + cardGap * 2;
+    const activeSlot = SaveSystem.getActiveSlotNumber();
+
+    this.add.rectangle(cx, cy, w, h, 0x080c14);
+    this.drawGrid(w, h);
+
+    this.add.text(cx, 64, "CASE FILES", {
+      fontFamily: "monospace",
+      fontSize: "30px",
+      color: "#00c8ff"
+    }).setOrigin(0.5);
+
+    this.add.text(cx, 98, "Choose a save slot for the solo investigation campaign.", {
+      fontFamily: "monospace",
+      fontSize: "12px",
+      color: "#5a8a9a"
+    }).setOrigin(0.5);
+
+    const cardW = Math.min(260, (w - 90) / 3);
+    const cardH = 230;
+    const gap = 18;
+    const totalW = cardW * 3 + gap * 2;
     const startX = cx - totalW / 2;
 
     for (let i = 0; i < 3; i++) {
+      const slotNumber = i + 1;
       const slot = slots[i] ?? null;
-      const cardCX = startX + i * (cardW + cardGap) + cardW / 2;
-      const cardCY = cy - 20;
-
-      this.buildCard(cardCX, cardCY, cardW, cardH, i + 1, slot);
+      this.buildCard(
+        startX + i * (cardW + gap) + cardW / 2,
+        cy + 16,
+        cardW,
+        cardH,
+        slotNumber,
+        slot,
+        slotNumber === activeSlot
+      );
     }
 
-    // ── Back button ───────────────────────────────────────────────────────────
-    this.createSmallButton(cx - 200, h - 40, "← Back", () => {
-      this.scene.start("VoidCraftMenuScene");
-    });
-
-    // ── ESC ───────────────────────────────────────────────────────────────────
-    if (this.input.keyboard) {
-      this.input.keyboard.once("keydown-ESC", () => {
-        this.scene.start("VoidCraftMenuScene");
-      });
-    }
+    this.createBackButton(cx, h - 34);
+    this.input.keyboard?.once("keydown-ESC", () => this.scene.start("MainMenuScene"));
   }
 
   private buildCard(
-    cx: number, cy: number,
-    cardW: number, cardH: number,
-    slotNum: number,
-    slot: SaveSlot | null
+    cx: number,
+    cy: number,
+    width: number,
+    height: number,
+    slotNumber: number,
+    slot: SaveSlot | null,
+    isActive: boolean
   ) {
-    const left = cx - cardW / 2;
-    const top = cy - cardH / 2;
+    const left = cx - width / 2;
+    const top = cy - height / 2;
+    const primaryClears = slot?.completedRooms.filter((roomId) => CAMPAIGN_ROOM_ORDER.includes(roomId as (typeof CAMPAIGN_ROOM_ORDER)[number])).length ?? 0;
 
-    // Card background
-    const gfx = this.add.graphics().setScrollFactor(0).setDepth(9);
-    gfx.fillStyle(0x0d1b2e, 0.95);
-    gfx.fillRoundedRect(left, top, cardW, cardH, 8);
-    gfx.lineStyle(1, slot ? 0x00c8ff : 0x1a2840, 0.6);
-    gfx.strokeRoundedRect(left, top, cardW, cardH, 8);
+    const bg = this.add.graphics();
+    bg.fillStyle(0x0d1b2e, 0.96);
+    bg.fillRoundedRect(left, top, width, height, 8);
+    bg.lineStyle(1, isActive ? 0x45f5c8 : slot ? 0x00c8ff : 0x1a2840, 0.7);
+    bg.strokeRoundedRect(left, top, width, height, 8);
 
-    // Slot number
-    this.add.text(cx, top + 14, `SLOT ${slotNum}`, {
-      fontFamily: "monospace", fontSize: "10px", color: "#334155"
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(10);
+    this.add.text(cx, top + 18, `FILE ${slotNumber}`, {
+      fontFamily: "monospace",
+      fontSize: "11px",
+      color: "#334155"
+    }).setOrigin(0.5);
 
-    if (slot) {
-      // Name
-      this.add.text(cx, top + 34, slot.name, {
-        fontFamily: "monospace", fontSize: "14px", color: "#00c8ff"
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(10);
-
-      // Play time
-      this.add.text(cx, top + 56, `⏱ ${formatTime(slot.playtime)}`, {
-        fontFamily: "monospace", fontSize: "11px", color: "#7a9aaa"
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(10);
-
-      // Progress badge
-      const rooms = slot.completedRooms.length;
-      const badgeColor = rooms >= ROOM_COUNT ? "#00ff88" : "#ff006e";
-      this.add.text(cx, top + 76, `🔓 ${rooms} / ${ROOM_COUNT} rooms`, {
-        fontFamily: "monospace", fontSize: "11px", color: badgeColor
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(10);
-
-      // Theme
-      if (slot.worldTheme) {
-        this.add.text(cx, top + 94, `🌍 ${slot.worldTheme}`, {
-          fontFamily: "monospace", fontSize: "10px", color: "#334155"
-        }).setOrigin(0.5).setScrollFactor(0).setDepth(10);
-      }
-
-      // CONTINUE button
-      this.createCardButton(cx, top + 134, cardW - 32, 28, "CONTINUE", "#00ff88", 0x0d2e1a, () => {
-        this.selectSlot(slotNum);
-      });
-
-      // DELETE button
-      this.createCardButton(cx, top + 170, cardW - 32, 24, "DELETE", "#ff006e", 0x2e0d0d, () => {
-        this.confirmDelete(slotNum);
-      });
-    } else {
-      // Empty slot
-      this.add.text(cx, top + 60, "Empty Slot", {
-        fontFamily: "monospace", fontSize: "14px", color: "#334155"
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(10);
-
-      this.add.text(cx, top + 82, "No save data", {
-        fontFamily: "monospace", fontSize: "10px", color: "#1a2840"
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(10);
-
-      // NEW GAME button
-      this.createCardButton(cx, top + 152, cardW - 32, 30, "NEW GAME", "#00c8ff", 0x0d1e2e, () => {
-        this.promptNewGame(slotNum);
-      });
+    if (isActive) {
+      this.add.text(cx, top + 36, "ACTIVE", {
+        fontFamily: "monospace",
+        fontSize: "10px",
+        color: "#45f5c8"
+      }).setOrigin(0.5);
     }
-  }
 
-  private createCardButton(
-    cx: number, cy: number,
-    btnW: number, btnH: number,
-    label: string,
-    textColor: string,
-    bgColor: number,
-    onClick: () => void
-  ) {
-    const gfx = this.add.graphics().setScrollFactor(0).setDepth(10);
-    gfx.fillStyle(bgColor, 1);
-    gfx.fillRoundedRect(cx - btnW / 2, cy - btnH / 2, btnW, btnH, 4);
+    if (!slot) {
+      this.add.text(cx, cy - 34, "Empty File", {
+        fontFamily: "monospace",
+        fontSize: "18px",
+        color: "#7a9aaa"
+      }).setOrigin(0.5);
 
-    const btn = this.add.text(cx, cy, label, {
-      fontFamily: "monospace", fontSize: "11px", color: textColor
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(11)
-      .setInteractive({ useHandCursor: true });
+      this.add.text(cx, cy - 4, "No progress recorded yet.", {
+        fontFamily: "monospace",
+        fontSize: "10px",
+        color: "#334155"
+      }).setOrigin(0.5);
 
-    btn.on("pointerover", () => { btn.setAlpha(0.75); });
-    btn.on("pointerout", () => { btn.setAlpha(1); });
-    btn.on("pointerdown", onClick);
-  }
+      this.createCardButton(cx, top + height - 42, width - 30, 32, "NEW FILE", "#00c8ff", () => {
+        SaveSystem.createSlot(slotNumber, `Case File ${slotNumber}`);
+        this.scene.start("PuzzleSelectScene");
+      });
+      return;
+    }
 
-  private selectSlot(slotNum: number) {
-    const target = this.initData?.targetScene ?? "CreativeScene";
-    const hud = this.initData?.hudScene;
-    this.scene.start(target, { slot: slotNum });
-    if (hud) this.scene.launch(hud, { slot: slotNum });
-  }
+    this.add.text(cx, top + 62, slot.name, {
+      fontFamily: "monospace",
+      fontSize: "15px",
+      color: "#00c8ff"
+    }).setOrigin(0.5);
 
-  private promptNewGame(slotNum: number) {
-    // Use a simple name based on slot number and timestamp
-    const name = `Save ${slotNum} — ${new Date().toLocaleDateString()}`;
-    SaveSystem.createSlot(slotNum, name);
-    this.selectSlot(slotNum);
-  }
+    this.add.text(cx, top + 88, `Playtime  ${formatTime(slot.playtime)}`, {
+      fontFamily: "monospace",
+      fontSize: "10px",
+      color: "#7a9aaa"
+    }).setOrigin(0.5);
 
-  private confirmDelete(slotNum: number) {
-    // Show inline confirmation overlay
-    const w = this.scale.width;
-    const h = this.scale.height;
-    const cx = w / 2;
-    const cy = h / 2;
+    this.add.text(cx, top + 112, `Main rooms  ${primaryClears}/${CAMPAIGN_ROOM_ORDER.length}`, {
+      fontFamily: "monospace",
+      fontSize: "10px",
+      color: "#45f5c8"
+    }).setOrigin(0.5);
 
-    const overlay = this.add.rectangle(cx, cy, w, h, 0x000000, 0.6)
-      .setScrollFactor(0).setDepth(50).setInteractive();
+    this.add.text(cx, top + 136, slot.campaignCompleted ? "Secret room unlocked" : "Secret room locked", {
+      fontFamily: "monospace",
+      fontSize: "10px",
+      color: slot.campaignCompleted ? "#ffe066" : "#334155"
+    }).setOrigin(0.5);
 
-    const box = this.add.graphics().setScrollFactor(0).setDepth(51);
-    box.fillStyle(0x0d1b2e, 1);
-    box.fillRoundedRect(cx - 180, cy - 70, 360, 140, 8);
-    box.lineStyle(1, 0xff006e, 0.8);
-    box.strokeRoundedRect(cx - 180, cy - 70, 360, 140, 8);
+    this.add.text(cx, top + 164, `Rooms cleared: ${slot.completedRooms.length}`, {
+      fontFamily: "monospace",
+      fontSize: "10px",
+      color: "#7a9aaa"
+    }).setOrigin(0.5);
 
-    const msg = this.add.text(cx, cy - 30, `Delete Slot ${slotNum}?\nThis cannot be undone.`, {
-      fontFamily: "monospace", fontSize: "14px", color: "#ff006e", align: "center"
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(52);
-
-    const confirmBtn = this.add.text(cx - 60, cy + 30, "DELETE", {
-      fontFamily: "monospace", fontSize: "13px", color: "#ff006e",
-      backgroundColor: "rgba(46,13,13,0.9)", padding: { x: 14, y: 6 }
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(52)
-      .setInteractive({ useHandCursor: true });
-
-    const cancelBtn = this.add.text(cx + 60, cy + 30, "CANCEL", {
-      fontFamily: "monospace", fontSize: "13px", color: "#00c8ff",
-      backgroundColor: "rgba(13,30,46,0.9)", padding: { x: 14, y: 6 }
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(52)
-      .setInteractive({ useHandCursor: true });
-
-    const cleanup = () => {
-      overlay.destroy(); box.destroy(); msg.destroy();
-      confirmBtn.destroy(); cancelBtn.destroy();
-    };
-
-    confirmBtn.on("pointerdown", () => {
-      cleanup();
-      SaveSystem.deleteSlot(slotNum);
-      this.scene.restart();
+    this.createCardButton(cx, top + height - 74, width - 30, 30, "OPEN FILE", "#45f5c8", () => {
+      SaveSystem.setActiveSlot(slotNumber);
+      this.scene.start("PuzzleSelectScene");
     });
 
-    cancelBtn.on("pointerdown", cleanup);
+    this.createCardButton(cx, top + height - 38, width - 30, 24, "DELETE", "#ff7aa2", () => {
+      SaveSystem.deleteSlot(slotNumber);
+      this.scene.restart();
+    });
   }
 
-  private createSmallButton(x: number, y: number, label: string, onClick: () => void) {
-    const btn = this.add.text(x, y, label, {
-      fontFamily: "monospace", fontSize: "12px", color: "#5a8a9a",
-      backgroundColor: "rgba(0,0,0,0.5)", padding: { x: 10, y: 5 }
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(20)
-      .setInteractive({ useHandCursor: true });
+  private createCardButton(cx: number, cy: number, width: number, height: number, label: string, color: string, onClick: () => void) {
+    const bg = this.add.rectangle(cx, cy, width, height, 0x0b1522, 0.98);
+    bg.setStrokeStyle(1, parseInt(color.replace("#", "0x")), 0.75);
+    const txt = this.add.text(cx, cy, label, {
+      fontFamily: "monospace",
+      fontSize: "11px",
+      color
+    }).setOrigin(0.5);
+
+    bg.setInteractive({ useHandCursor: true });
+    bg.on("pointerover", () => txt.setAlpha(0.8));
+    bg.on("pointerout", () => txt.setAlpha(1));
+    bg.on("pointerdown", onClick);
+  }
+
+  private createBackButton(x: number, y: number) {
+    const btn = this.add.text(x, y, "BACK TO MENU", {
+      fontFamily: "monospace",
+      fontSize: "12px",
+      color: "#5a8a9a",
+      backgroundColor: "rgba(0,0,0,0.5)",
+      padding: { x: 12, y: 6 }
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     btn.on("pointerover", () => btn.setColor("#00c8ff"));
     btn.on("pointerout", () => btn.setColor("#5a8a9a"));
-    btn.on("pointerdown", onClick);
-    return btn;
+    btn.on("pointerdown", () => this.scene.start("MainMenuScene"));
   }
 
   private drawGrid(w: number, h: number) {
-    const gfx = this.add.graphics().setScrollFactor(0).setDepth(1);
-    gfx.lineStyle(1, 0x00c8ff, 0.05);
+    const gfx = this.add.graphics();
+    gfx.lineStyle(1, 0x173248, 0.12);
     for (let x = 0; x < w; x += 48) gfx.lineBetween(x, 0, x, h);
     for (let y = 0; y < h; y += 48) gfx.lineBetween(0, y, w, y);
-  }
-
-  private spawnParticles(w: number, h: number) {
-    const colors = [0x00c8ff, 0xff006e, 0x00ff88];
-    for (let i = 0; i < 14; i++) {
-      const px = Math.random() * w;
-      const py = Math.random() * h;
-      const color = colors[Math.floor(Math.random() * colors.length)]!;
-      const size = 1 + Math.random() * 2;
-      const rect = this.add.rectangle(px, py, size, size, color, 0.4)
-        .setScrollFactor(0).setDepth(2);
-      this.tweens.add({
-        targets: rect,
-        y: py - 60 - Math.random() * 80,
-        alpha: 0,
-        duration: 3500 + Math.random() * 3500,
-        delay: Math.random() * 2500,
-        repeat: -1,
-        repeatDelay: Math.random() * 1500,
-        onRepeat: () => {
-          rect.x = Math.random() * w;
-          rect.y = h + 10;
-          rect.setAlpha(0.4);
-        }
-      });
-    }
   }
 }

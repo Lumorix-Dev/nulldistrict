@@ -22,15 +22,13 @@ export class EscapeRoom4Scene extends PuzzleScene {
     super("EscapeRoom4Scene");
   }
 
-  public override create(): void { super.create(); }
-
-  protected hints: string[] = [
+  protected override hints: string[] = [
     "Step on the first switch to start the 12-second timer — plan your route before activating.",
     "Use the moving platforms to reach the higher switches quickly.",
     "All 4 switches must be hit within the same 12-second window. Study the layout first.",
   ];
 
-  protected definition: RoomDefinition = {
+  protected override definition: RoomDefinition = {
     id: "escape-room-4",
     title: "Level 4 — The Clockwork",
     width: 2880,

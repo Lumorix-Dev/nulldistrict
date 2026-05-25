@@ -14,14 +14,14 @@ const GREY = 0x555566;
 
 export class SettingsScene extends Phaser.Scene {
   private ui!: UISystem;
-  private returnTo = "VoidCraftMenuScene";
+  private returnTo = "MainMenuScene";
 
   constructor() {
     super("SettingsScene");
   }
 
   init(data: { returnTo?: string }) {
-    this.returnTo = data?.returnTo ?? "VoidCraftMenuScene";
+    this.returnTo = data?.returnTo ?? "MainMenuScene";
   }
 
   create() {
@@ -139,20 +139,13 @@ export class SettingsScene extends Phaser.Scene {
     rightY = this._sectionHeader("CONTROLS", rightColX, rightY, 2003);
 
     const keybindings: [string, string][] = [
-      ["WASD / Arrows", "Move / Scroll"],
-      ["Left Click", "Place tile"],
-      ["Right Click", "Erase tile"],
-      ["Middle Click", "Pick tile"],
-      ["Scroll Wheel", "Change brush size"],
-      ["1–9", "Hotbar slot"],
-      ["E", "Open inventory"],
-      ["F", "Flood fill"],
-      ["G", "Grab/select"],
-      ["Ctrl+Z", "Undo"],
-      ["Ctrl+Y", "Redo"],
-      ["Ctrl+C/V", "Copy/paste"],
+      ["WASD / Arrows", "Move"],
+      ["Space", "Jump"],
+      ["F", "Interact"],
+      ["Mouse", "Use UI buttons"],
+      ["Hint Button", "Request hint"],
       ["ESC", "Pause menu"],
-      ["Tab", "Toggle layer"],
+      ["Objective Panel", "Bottom left"],
     ];
 
     const KBY_STEP = 20;
@@ -180,13 +173,13 @@ export class SettingsScene extends Phaser.Scene {
     this.ui.createButton({
       x: panelCX, y: rightY + 10,
       width: PANEL_W, height: 36,
-      label: "🗑  Reset All Save Data",
+      label: "🗑  Reset Campaign Data",
       color: 0x2b0d0d,
       textColor: "#ff6666",
       fontSize: 13,
       onClick: () => {
         this.ui.showConfirm(
-          "Delete ALL VoidCraft save data? This cannot be undone.",
+          "Delete all local campaign save data? This cannot be undone.",
           () => {
             const keys = Object.keys(localStorage).filter(k => k.startsWith("voidcraft"));
             keys.forEach(k => localStorage.removeItem(k));
